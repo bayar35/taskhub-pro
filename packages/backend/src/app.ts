@@ -4,7 +4,6 @@ import helmet from 'helmet';
 import compression from 'compression';
 import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
-import todoRoutes from './modules/todo/todo.routes';
 
 import { env } from './config/env';
 import { apiLimiter } from './middleware/rateLimiter.middleware';
@@ -14,6 +13,7 @@ import {
 } from './middleware/error.middleware';
 
 import authRoutes from './modules/auth/auth.routes';
+import todoRoutes from './modules/todo/todo.routes';
 
 const app: Application = express();
 
@@ -42,7 +42,7 @@ if (env.NODE_ENV !== 'test') {
 // 🛡️ Rate limiting
 app.use('/api', apiLimiter);
 
-// 🏥 Health check
+// 🏥 Health check — ЗӨВ БАЙРЛАЛД
 app.get('/health', (req, res) => {
   res.json({
     status: 'ok',
@@ -52,10 +52,9 @@ app.get('/health', (req, res) => {
   });
 });
 
-// 🚏 Routes
+// 🚏 Routes — ЗӨВХӨН 1 УДАА бүртгэх
 app.use('/api/v1/auth', authRoutes);
-app.use('/api/v1/auth', authRoutes);
-app.use('/api/v1/todos', todoRoutes);  // ← ШИНЭ
+app.use('/api/v1/todos', todoRoutes);
 
 // ❌ Error handlers (хамгийн сүүлд)
 app.use(notFound);
