@@ -20,6 +20,5 @@ export interface IUserPublic {
 
 export interface IAuthResponse {
   accessToken: string;
-  refreshToken: string;
   user: IUser;
 }

@@ -26,7 +26,7 @@ export const list = asyncHandler(async (req: Request, res: Response) => {
 
 export const getOne = asyncHandler(async (req: Request, res: Response) => {
   const userId = (req as any).userId;
-  const todo = await todoService.getById(req.params.id, userId);
+  const todo = await todoService.getById(String(req.params.id), userId);
   res.json({ success: true, data: todo });
 });
 
@@ -38,19 +38,23 @@ export const create = asyncHandler(async (req: Request, res: Response) => {
 
 export const update = asyncHandler(async (req: Request, res: Response) => {
   const userId = (req as any).userId;
-  const todo = await todoService.update(req.params.id, userId, req.body);
+  const todo = await todoService.update(
+    String(req.params.id),
+    userId,
+    req.body
+  );
   res.json({ success: true, data: todo });
 });
 
 export const toggle = asyncHandler(async (req: Request, res: Response) => {
   const userId = (req as any).userId;
-  const todo = await todoService.toggle(req.params.id, userId);
+  const todo = await todoService.toggle(String(req.params.id), userId);
   res.json({ success: true, data: todo });
 });
 
 export const remove = asyncHandler(async (req: Request, res: Response) => {
   const userId = (req as any).userId;
-  await todoService.delete(req.params.id, userId);
+  await todoService.delete(String(req.params.id), userId);
   res.json({ success: true, message: 'Устгагдлаа' });
 });
 

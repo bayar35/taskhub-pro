@@ -7,7 +7,7 @@ const COOKIE_OPTIONS = {
   httpOnly: true,
   secure: env.NODE_ENV === 'production',
   sameSite: 'strict' as const,
-  maxAge: 7 * 24 * 60 * 60 * 1000,
+  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 хоног
 };
 
 export const register = asyncHandler(
@@ -22,8 +22,10 @@ export const login = asyncHandler(
     const { accessToken, refreshToken, user } =
       await authService.login(req.body);
 
+    // Refresh token-ийг HttpOnly cookie-д хийх
     res.cookie('refreshToken', refreshToken, COOKIE_OPTIONS);
 
+    // Access token + user-ийг JSON response-д буцаах
     res.json({
       success: true,
       data: { accessToken, user },
@@ -34,6 +36,7 @@ export const login = asyncHandler(
 export const refresh = asyncHandler(
   async (req: Request, res: Response) => {
     const token = req.cookies.refreshToken;
+
     if (!token) {
       return res
         .status(401)

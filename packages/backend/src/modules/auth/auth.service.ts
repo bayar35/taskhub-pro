@@ -1,22 +1,24 @@
 import {
   registerSchema,
   loginSchema,
-  type IAuthResponse,
   type IUser,
   type RegisterInput,
   type LoginInput,
 } from '@taskhub/shared';
 import { authRepository } from './auth.repository';
-import {
-  hashPassword,
-  comparePassword,
-} from '../../utils/password';
+import { hashPassword, comparePassword } from '../../utils/password';
 import {
   signAccessToken,
   signRefreshToken,
   verifyRefreshToken,
 } from '../../utils/jwt';
 import { ApiError } from '../../utils/ApiError';
+
+interface LoginResult {
+  accessToken: string;
+  refreshToken: string;
+  user: IUser;
+}
 
 export class AuthService {
   async register(input: RegisterInput): Promise<IUser> {
@@ -39,7 +41,7 @@ export class AuthService {
     return this.toPublicUser(user);
   }
 
-  async login(input: LoginInput): Promise<IAuthResponse> {
+  async login(input: LoginInput): Promise<LoginResult> {
     const data = loginSchema.parse(input);
 
     const user = await authRepository.findByUsername(data.username);
@@ -47,10 +49,7 @@ export class AuthService {
       throw ApiError.badRequest('Нэр эсвэл нууц үг буруу');
     }
 
-    const isMatch = await comparePassword(
-      data.password,
-      user.password
-    );
+    const isMatch = await comparePassword(data.password, user.password);
     if (!isMatch) {
       throw ApiError.badRequest('Нэр эсвэл нууц үг буруу');
     }
@@ -63,13 +62,11 @@ export class AuthService {
     const accessToken = signAccessToken(payload);
     const refreshToken = signRefreshToken(payload);
 
-    await authRepository.addRefreshToken(
-      user._id.toString(),
-      refreshToken
-    );
+    await authRepository.addRefreshToken(user._id.toString(), refreshToken);
 
     return {
       accessToken,
+      refreshToken,
       user: this.toPublicUser(user),
     };
   }
