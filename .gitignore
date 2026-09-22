@@ -13,3 +13,5 @@ logs/
 .DS_Store
 coverage/
 .cache/
+# Accidental git file
+/git
