@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/node';
 import { Request, Response, NextFunction } from 'express';
 import { ApiError } from '../utils/ApiError';
 import { logger } from '../config/logger';
@@ -25,6 +26,11 @@ export const errorHandler = (
     statusCode = err.statusCode;
     message = err.message;
     errors = err.errors;
+  }
+
+  // ⭐ ЭНИЙГ НЭМЭХ — Sentry-д 5xx алдаа илгээх
+  if (statusCode >= 500) {
+    Sentry.captureException(err);
   }
 
   logger.error(`${statusCode} - ${message} - ${req.originalUrl}`);
