@@ -8,9 +8,8 @@
     "start": "node dist/server.js",
     "test": "vitest run",
     "test:watch": "vitest",
-    "lint": "eslint src --ext .ts",
-    "typecheck": "tsc --noEmit",
-    "clean": "rimraf dist"
+    "test:coverage": "vitest run --coverage",
+    "test:ui": "vitest --ui"
   },
   "dependencies": {
     "@sentry/node": "^10.75.2",
@@ -40,10 +39,12 @@
     "@types/jsonwebtoken": "^9.0.7",
     "@types/morgan": "^1.9.9",
     "@types/node": "^22.7.6",
-    "@vitest/coverage-v8": "^2.1.4",
-    "supertest": "^7.0.0",
+    "@types/supertest": "^7.2.1",
+    "@vitest/coverage-v8": "^2.1.9",
+    "mongodb-memory-server": "^11.3.0",
+    "supertest": "^7.3.0",
     "tsx": "^4.19.1",
     "typescript": "^5.6.3",
-    "vitest": "^2.1.4"
+    "vitest": "^2.1.9"
   }
 }

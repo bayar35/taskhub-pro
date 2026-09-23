@@ -12,8 +12,31 @@ const COOKIE_OPTIONS = {
 
 export const register = asyncHandler(
   async (req: Request, res: Response) => {
-    const user = await authService.register(req.body);
-    res.status(201).json({ success: true, data: user });
+    try {
+      const user = await authService.register(req.body);
+      res.status(201).json({ success: true, data: user });
+    } catch (err: any) {
+      // Zod validation error → 400
+      if (err.name === 'ZodError' || err.issues) {
+        return res.status(400).json({
+          success: false,
+          message: 'Validation алдаа',
+          errors: err.issues?.map((e: any) => ({
+            field: e.path.join('.'),
+            message: e.message,
+          })) || [],
+        });
+      }
+      // ApiError → statusCode
+      if (err.statusCode) {
+        return res.status(err.statusCode).json({
+          success: false,
+          message: err.message,
+        });
+      }
+      // Бусад → 500
+      throw err;
+    }
   }
 );
 
