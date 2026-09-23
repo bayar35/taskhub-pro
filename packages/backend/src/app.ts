@@ -56,6 +56,11 @@ app.get('/health', (req, res) => {
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/todos', todoRoutes);
 
+// 🧪 Sentry test endpoint (ТҮР ЗУУР — дараа нь устгана!)
+app.get('/api/v1/test-error', (req, res, next) => {
+  next(new Error('🧪 Sentry test error — this is intentional'));
+});
+
 // ❌ Error handlers (хамгийн сүүлд)
 app.use(notFound);
 app.use(errorHandler);
