@@ -42,10 +42,16 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-1">
+            <label
+              htmlFor="username"
+              className="block text-sm font-medium mb-1"
+            >
               Хэрэглэгчийн нэр
             </label>
             <input
+              id="username"
+              type="text"
+              placeholder="Хэрэглэгчийн нэр"
               {...register('username')}
               className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
             />
@@ -57,9 +63,16 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">Нууц үг</label>
+            <label
+              htmlFor="password"
+              className="block text-sm font-medium mb-1"
+            >
+              Нууц үг
+            </label>
             <input
+              id="password"
               type="password"
+              placeholder="Нууц үг"
               {...register('password')}
               className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
             />
