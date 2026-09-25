@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [20.x]
+        node-version: [22.x]   # ← 20.x-ийг 22.x болгож соль
 
     env:
       NODE_ENV: test
