@@ -1,0 +1,39 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [20.x]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Run backend tests
+        run: npm run test --workspace=packages/backend
+        env:
+          NODE_ENV: test
+
+      - name: Run frontend tests
+        run: npm run test --workspace=packages/frontend
+
+      - name: Generate frontend coverage
+        run: npm run test:coverage --workspace=packages/frontend
+        continue-on-error: true
