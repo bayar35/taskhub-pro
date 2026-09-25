@@ -2,8 +2,6 @@
 
 [![Tests](https://github.com/bayar35/taskhub-pro/actions/workflows/test.yml/badge.svg)](https://github.com/bayar35/taskhub-pro/actions/workflows/test.yml)
 
-# TaskHub Pro
-
 Senior-grade MERN monorepo with TypeScript, Redux Toolkit, and more.
 
 ## Stack
