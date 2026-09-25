@@ -1,22 +1,26 @@
 import { beforeAll, afterAll, afterEach } from 'vitest';
+import { MongoMemoryServer } from 'mongodb-memory-server';
 import mongoose from 'mongoose';
-import dotenv from 'dotenv';
-import path from 'path';
 
-// .env.test файлаас унших
-dotenv.config({ path: path.resolve(__dirname, '../.env.test') });
+let mongoServer: MongoMemoryServer;
 
 beforeAll(async () => {
-  const uri = process.env.MONGO_URI;
-  if (!uri) throw new Error('MONGO_URI not set in .env.test');
-
+  mongoServer = await MongoMemoryServer.create({
+    binary: {
+      version: '7.0.14',
+    },
+    instance: {
+      launchTimeout: 30000,
+    },
+  });
+  const uri = mongoServer.getUri();
+  process.env.MONGO_URI = uri;
   await mongoose.connect(uri);
   console.log('✅ Test MongoDB холбогдлоо');
-}, 30000);
+}, 300000);
 
 afterEach(async () => {
   if (mongoose.connection.readyState !== 1) return;
-
   const collections = mongoose.connection.collections;
   for (const key in collections) {
     await collections[key].deleteMany({});
@@ -26,6 +30,9 @@ afterEach(async () => {
 afterAll(async () => {
   if (mongoose.connection.readyState === 1) {
     await mongoose.disconnect();
-    console.log('🔌 Test MongoDB салсан');
   }
+  if (mongoServer) {
+    await mongoServer.stop();
+  }
+  console.log('🔌 Test MongoDB салсан');
 });

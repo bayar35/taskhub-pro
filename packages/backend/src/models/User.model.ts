@@ -49,4 +49,6 @@ const UserSchema = new Schema<IUserDoc>(
   { timestamps: true }
 );
 
-export const User = mongoose.model<IUserDoc>('User', UserSchema);
+export const User =
+  mongoose.models.User ||
+  mongoose.model<IUserDoc>('User', UserSchema);

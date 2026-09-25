@@ -56,4 +56,6 @@ const TodoSchema = new Schema<ITodoDoc>(
 TodoSchema.index({ userId: 1, completed: 1, createdAt: -1 });
 TodoSchema.index({ text: 'text' });
 
-export const Todo = mongoose.model<ITodoDoc>('Todo', TodoSchema);
+export const Todo =
+  mongoose.models.Todo ||
+  mongoose.model<ITodoDoc>('Todo', TodoSchema);
