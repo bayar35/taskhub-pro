@@ -30,10 +30,9 @@ jobs:
         run: npm run test --workspace=packages/backend
         env:
           NODE_ENV: test
+          MONGO_URI: mongodb://localhost:27017/test
+          JWT_SECRET: test-jwt-secret-for-ci-only
+          JWT_REFRESH_SECRET: test-jwt-refresh-secret-for-ci-only
 
       - name: Run frontend tests
         run: npm run test --workspace=packages/frontend
-
-      - name: Generate frontend coverage
-        run: npm run test:coverage --workspace=packages/frontend
-        continue-on-error: true
