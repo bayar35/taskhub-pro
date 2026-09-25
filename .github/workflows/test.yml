@@ -13,6 +13,12 @@ jobs:
       matrix:
         node-version: [20.x]
 
+    env:
+      NODE_ENV: test
+      MONGO_URI: mongodb://localhost:27017/test
+      JWT_SECRET: ci-test-jwt-secret-with-minimum-32-characters-long
+      JWT_REFRESH_SECRET: ci-test-jwt-refresh-secret-with-minimum-32-characters
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -28,11 +34,6 @@ jobs:
 
       - name: Run backend tests
         run: npm run test --workspace=packages/backend
-        env:
-          NODE_ENV: test
-          MONGO_URI: mongodb://localhost:27017/test
-          JWT_SECRET: test-jwt-secret-for-ci-only
-          JWT_REFRESH_SECRET: test-jwt-refresh-secret-for-ci-only
 
       - name: Run frontend tests
         run: npm run test --workspace=packages/frontend
