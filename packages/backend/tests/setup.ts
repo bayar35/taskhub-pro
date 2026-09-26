@@ -1,26 +1,16 @@
 import { beforeAll, afterAll, afterEach } from 'vitest';
-import { MongoMemoryServer } from 'mongodb-memory-server';
 import mongoose from 'mongoose';
 
-let mongoServer: MongoMemoryServer | null = null;
-
 beforeAll(async () => {
-  let uri = process.env.MONGO_URI;
+  const uri = process.env.MONGO_URI;
 
   if (!uri) {
-    console.log('⚠️ MONGO_URI байхгүй — MongoMemoryServer ашиглаж байна');
-    mongoServer = await MongoMemoryServer.create({
-      binary: { version: '7.0.14' },
-      instance: { launchTimeout: 120000 },
-    });
-    uri = mongoServer.getUri();
-  } else {
-    console.log('✅ MongoDB Atlas ашиглаж байна');
+    throw new Error('MONGO_URI тохируулаагүй байна');
   }
 
   await mongoose.connect(uri);
-  console.log('✅ Test MongoDB холбогдлоо');
-}, 300000);
+  console.log('✅ Test MongoDB (Atlas) холбогдлоо');
+}, 60000);
 
 afterEach(async () => {
   if (mongoose.connection.readyState !== 1) return;
@@ -33,9 +23,6 @@ afterEach(async () => {
 afterAll(async () => {
   if (mongoose.connection.readyState === 1) {
     await mongoose.disconnect();
-  }
-  if (mongoServer) {
-    await mongoServer.stop();
   }
   console.log('🔌 Test MongoDB салсан');
 });

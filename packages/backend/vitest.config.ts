@@ -1,8 +1,11 @@
 import { defineConfig } from 'vitest/config';
 import { config } from 'dotenv';
+import { existsSync } from 'fs';
 
-// .env.test файлыг ачаалах
-config({ path: './.env.test' });
+// .env.test файл байгаа үед л ачаалах
+if (existsSync('./.env.test')) {
+  config({ path: './.env.test' });
+}
 
 export default defineConfig({
   test: {
@@ -16,7 +19,7 @@ export default defineConfig({
         singleFork: true,
       },
     },
-    testTimeout: 30000,
-    hookTimeout: 60000,
+    testTimeout: 120000,
+    hookTimeout: 300000,
   },
 });
