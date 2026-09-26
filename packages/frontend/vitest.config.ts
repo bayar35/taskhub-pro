@@ -17,7 +17,15 @@ export default mergeConfig(
           'tests/',
           '**/*.config.*',
           '**/*.d.ts',
+          '**/main.tsx',
+          '**/vite-env.d.ts',
         ],
+        thresholds: {
+          statements: 70,
+          branches: 75,
+          functions: 45,
+          lines: 70,
+        },
       },
     },
   })
