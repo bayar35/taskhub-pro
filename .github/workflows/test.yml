@@ -15,9 +15,12 @@ jobs:
 
     env:
       NODE_ENV: test
-      MONGO_URI: mongodb://localhost:27017/test
-      JWT_SECRET: ci-test-jwt-secret-with-minimum-32-characters-long
-      JWT_REFRESH_SECRET: ci-test-jwt-refresh-secret-with-minimum-32-characters
+      MONGO_URI: ${{ secrets.MONGO_URI_TEST }}  # ⬅️ Atlas
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}
+      JWT_REFRESH_SECRET: ${{ secrets.JWT_REFRESH_SECRET }}
+      JWT_EXPIRES_IN: 15m
+      JWT_REFRESH_EXPIRES_IN: 7d
+      CLIENT_URL: http://localhost:5173
 
     steps:
       - name: Checkout code
@@ -39,14 +42,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-node-
 
-      - name: Cache MongoDB binaries
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/mongodb-binaries
-          key: ${{ runner.os }}-mongodb-binaries-7.0.14
-          restore-keys: |
-            ${{ runner.os }}-mongodb-binaries-
-
       - name: Install dependencies
         run: npm install --no-audit --no-fund
 
@@ -55,6 +50,7 @@ jobs:
 
       - name: Run backend tests
         run: npm run test --workspace=packages/backend
+        # MONGO_URI нь env блокоос автоматаар дамжина
 
       - name: Run frontend tests
         run: npm run test --workspace=packages/frontend
