@@ -1,35 +1,30 @@
 import { Request, Response, NextFunction } from 'express';
-import { verifyAccessToken } from '../utils/jwt';
-import { ApiError } from '../utils/ApiError';
+import { verifyAccessToken, JwtPayload } from '../utils/jwt';
 
-export const authenticate = (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  const authHeader = req.headers.authorization;
-  const token = authHeader?.split(' ')[1];
+declare global {
+  namespace Express {
+    interface Request {
+      user?: JwtPayload;
+      userId?: string;  // ⬅️ НЭМЭХ
+    }
+  }
+}
 
-  if (!token) {
-    throw ApiError.unauthorized('Токен байхгүй');
+export function authenticate(req: Request, res: Response, next: NextFunction) {
+  const header = req.headers.authorization;
+  if (!header?.startsWith('Bearer ')) {
+    return res.status(401).json({ message: 'Token байхгүй' });
   }
 
+  const token = header.slice(7);
   try {
     const payload = verifyAccessToken(token);
-    (req as any).userId = payload.userId;
-    (req as any).userRole = payload.role;
+    req.user = payload;
+    req.userId = payload.userId;  // ⬅️ НЭМЭХ
     next();
   } catch {
-    throw ApiError.unauthorized('Хүчингүй токен');
+    return res.status(401).json({ message: 'Token хүчингүй эсвэл хугацаа дууссан' });
   }
-};
+}
 
-export const authorize =
-  (...roles: string[]) =>
-  (req: Request, res: Response, next: NextFunction) => {
-    const userRole = (req as any).userRole;
-    if (!roles.includes(userRole)) {
-      throw ApiError.forbidden('Хандах эрхгүй');
-    }
-    next();
-  };
+export const requireAuth = authenticate;

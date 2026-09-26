@@ -1,4 +1,4 @@
-import './instrument';  // ← ЭХНИЙ МӨР БАЙХ ЁСТОЙ!
+import './instrument';
 import http from 'http';
 import app from './app';
 import { env } from './config/env';
@@ -6,18 +6,15 @@ import { logger } from './config/logger';
 import { connectDB } from './config/db';
 import { initSocket } from './config/socket';
 
+// ⬇️ cookieParser, authRoutes, app.use-ууд БҮГД app.ts руу шилжсэн
+// Тиймээс энд дахин бичих шаардлагагүй!
+
 async function bootstrap() {
   try {
-    // 1. MongoDB холболт
     await connectDB();
-
-    // 2. HTTP server
     const server = http.createServer(app);
-
-    // 3. Socket.io
     initSocket(server);
 
-    // 4. Listen
     server.listen(env.PORT, () => {
       logger.info(`🚀 Server ${env.PORT} port дээр ажиллаж байна`);
       logger.info(`🌍 Environment: ${env.NODE_ENV}`);
@@ -25,17 +22,12 @@ async function bootstrap() {
       logger.info(`🏥 Health: http://localhost:${env.PORT}/health`);
     });
 
-    // 5. Graceful shutdown
     const shutdown = async (signal: string) => {
-      logger.info(
-        `${signal} дохио хүлээн авлаа. Серверийг хааж байна...`
-      );
-
+      logger.info(`${signal} дохио хүлээн авлаа. Серверийг хааж байна...`);
       server.close(() => {
         logger.info('HTTP server хаагдлаа');
         process.exit(0);
       });
-
       setTimeout(() => {
         logger.error('Албадсан хаалт. Forced exit.');
         process.exit(1);
@@ -50,7 +42,6 @@ async function bootstrap() {
   }
 }
 
-// Global error handlers
 process.on('unhandledRejection', (reason) => {
   logger.error(`Unhandled Rejection: ${reason}`);
 });

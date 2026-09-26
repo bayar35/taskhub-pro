@@ -88,4 +88,104 @@ describe('Auth API', () => {
       expect(res.status).toBe(401);
     });
   });
+
+    // ============================================================
+  // REFRESH TOKEN ТЕСТҮҮД
+  // ============================================================
+  describe('Refresh Token', () => {
+    let accessToken: string;
+    let refreshCookie: string;
+
+    beforeEach(async () => {
+      await request(app).post('/api/v1/auth/register').send(testUser);
+      const login = await request(app)
+        .post('/api/v1/auth/login')
+        .send(testUser);
+
+      accessToken = login.body.data.accessToken;
+      // Refresh token нь httpOnly cookie-д ирдэг
+      refreshCookie = login.headers['set-cookie']?.[0] || '';
+    });
+
+    it('should return refresh token in httpOnly cookie on login', async () => {
+      const login = await request(app)
+        .post('/api/v1/auth/login')
+        .send(testUser);
+
+      const cookies = login.headers['set-cookie'];
+      expect(cookies).toBeDefined();
+      expect(cookies![0]).toContain('refreshToken=');
+      expect(cookies![0]).toContain('HttpOnly');
+    });
+
+    it('should return new access token with valid refresh token', async () => {
+      await new Promise((resolve) => setTimeout(resolve, 1100));
+
+    const res = await request(app)
+      .post('/api/v1/auth/refresh')
+      .set('Cookie', refreshCookie);
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.accessToken).toBeDefined();
+    // Token нь JWT форматтай эсэхийг шалгах (3 хэсэг, цэгээр тусгаарлагдсан)
+    expect(res.body.data.accessToken.split('.')).toHaveLength(3);
+  });
+
+    it('should reject refresh without cookie', async () => {
+      const res = await request(app).post('/api/v1/auth/refresh');
+
+      expect(res.status).toBe(401);
+      expect(res.body.success).toBe(false);
+    });
+
+    it('should reject refresh with invalid token', async () => {
+      const res = await request(app)
+        .post('/api/v1/auth/refresh')
+        .set('Cookie', 'refreshToken=invalid.token.here');
+
+      expect(res.status).toBe(401);
+      expect(res.body.success).toBe(false);
+    });
+
+    it('should logout and clear refresh token cookie', async () => {
+      const res = await request(app)
+        .post('/api/v1/auth/logout')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .set('Cookie', refreshCookie);
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.message).toBe('Гарлаа');
+
+      // Cookie устгагдах ёстой
+      const cookies = res.headers['set-cookie'];
+      expect(cookies).toBeDefined();
+      expect(cookies![0]).toContain('refreshToken=;');
+    });
+
+    it('should reject refresh after logout', async () => {
+      // 1. Logout хийх
+      await request(app)
+        .post('/api/v1/auth/logout')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .set('Cookie', refreshCookie);
+
+      // 2. Дахин refresh турших — ажиллахгүй байх ёстой
+      const res = await request(app)
+        .post('/api/v1/auth/refresh')
+        .set('Cookie', refreshCookie);
+
+      expect(res.status).toBe(401);
+      expect(res.body.success).toBe(false);
+    });
+
+    it('should reject logout without access token', async () => {
+      const res = await request(app)
+        .post('/api/v1/auth/logout')
+        .set('Cookie', refreshCookie);
+
+      expect(res.status).toBe(401);
+    });
+  });
 });
