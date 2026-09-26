@@ -15,9 +15,9 @@ jobs:
 
     env:
       NODE_ENV: test
-      MONGO_URI: ${{ secrets.MONGO_URI_TEST }}  # ⬅️ Atlas
-      JWT_SECRET: ${{ secrets.JWT_SECRET }}
-      JWT_REFRESH_SECRET: ${{ secrets.JWT_REFRESH_SECRET }}
+      MONGO_URI: ${{ secrets.MONGO_URI_TEST }}      # ← ЗАССАН
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}          # ← ЗАССАН
+      JWT_REFRESH_SECRET: ${{ secrets.JWT_REFRESH_SECRET }}  # ← ЗАССАН
       JWT_EXPIRES_IN: 15m
       JWT_REFRESH_EXPIRES_IN: 7d
       CLIENT_URL: http://localhost:5173
