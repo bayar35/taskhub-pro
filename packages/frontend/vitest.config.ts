@@ -9,6 +9,16 @@ export default mergeConfig(
       globals: true,
       setupFiles: ['./tests/setup.ts'],
       include: ['tests/**/*.test.{ts,tsx}'],
+      coverage: {
+        provider: 'v8',
+        reporter: ['text', 'html', 'lcov'],
+        exclude: [
+          'node_modules/',
+          'tests/',
+          '**/*.config.*',
+          '**/*.d.ts',
+        ],
+      },
     },
   })
 )

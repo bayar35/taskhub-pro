@@ -66,3 +66,15 @@ jobs:
 
       - name: Run frontend tests
         run: npm run test --workspace=packages/frontend
+
+              - name: Generate frontend coverage
+        run: npm run test:coverage --workspace=packages/frontend
+        continue-on-error: true
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./packages/frontend/coverage/lcov.info
+          flags: frontend
+          fail_ci_if_error: false
