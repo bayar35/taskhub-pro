@@ -47,14 +47,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-mongodb-binaries-
 
-      - name: Cache Turbo
-        uses: actions/cache@v4
-        with:
-          path: .turbo
-          key: ${{ runner.os }}-turbo-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-turbo-
-
       - name: Install dependencies
         run: npm install --no-audit --no-fund
 
@@ -66,3 +58,24 @@ jobs:
 
       - name: Run frontend tests
         run: npm run test --workspace=packages/frontend
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+        working-directory: packages/frontend
+
+      - name: Run E2E tests
+        run: npm run test:e2e --workspace=packages/frontend
+        continue-on-error: true
+
+      - name: Generate frontend coverage
+        run: npm run test:coverage --workspace=packages/frontend
+        continue-on-error: true
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./packages/frontend/coverage/lcov.info
+          flags: frontend
+          fail_ci_if_error: false
+        continue-on-error: true
