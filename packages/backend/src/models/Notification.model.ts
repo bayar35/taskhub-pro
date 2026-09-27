@@ -38,4 +38,9 @@ const NotificationSchema = new Schema<INotificationDoc>(
 // TTL index — 30 хоногийн дараа автоматаар устгах
 NotificationSchema.index({ createdAt: 1 }, { expireAfterSeconds: 30 * 24 * 60 * 60 });
 
-export default mongoose.model<INotificationDoc>('Notification', NotificationSchema);
+// ⬇️ ЗАСВАР: Дахин бүртгэхээс сэргийлэх
+const Notification =
+  (mongoose.models.Notification as mongoose.Model<INotificationDoc>) ||
+  mongoose.model<INotificationDoc>('Notification', NotificationSchema);
+
+export default Notification;
