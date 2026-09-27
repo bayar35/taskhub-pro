@@ -4,6 +4,7 @@ import { Provider } from 'react-redux';
 import { BrowserRouter } from 'react-router-dom';
 import { configureStore } from '@reduxjs/toolkit';
 import authReducer from '../src/features/auth/authSlice';
+import { ThemeProvider } from '../src/contexts/ThemeContext'; // ⬅️ НЭМЭХ
 
 // ===== RTK Query hook-уудыг mock хийх =====
 const mockCreateTodo = vi.fn();
@@ -82,7 +83,9 @@ function renderWithProviders({
   return render(
     <Provider store={store}>
       <BrowserRouter>
-        <DashboardPage />
+        <ThemeProvider>          {/* ⬅️ НЭМЭХ */}
+          <DashboardPage />
+        </ThemeProvider>         {/* ⬅️ НЭМЭХ */}
       </BrowserRouter>
     </Provider>
   );
@@ -105,9 +108,9 @@ describe('DashboardPage', () => {
 
   it('15. should render stats (total, completed, pending)', () => {
     renderWithProviders();
-    expect(screen.getByText('5')).toBeInTheDocument(); // total
-    expect(screen.getByText('2')).toBeInTheDocument(); // completed
-    expect(screen.getByText('3')).toBeInTheDocument(); // pending
+    expect(screen.getByText('5')).toBeInTheDocument();
+    expect(screen.getByText('2')).toBeInTheDocument();
+    expect(screen.getByText('3')).toBeInTheDocument();
     expect(screen.getByText('Нийт')).toBeInTheDocument();
     expect(screen.getByText('Дууссан')).toBeInTheDocument();
     expect(screen.getByText('Хүлээгдэж буй')).toBeInTheDocument();
@@ -121,12 +124,8 @@ describe('DashboardPage', () => {
 
   it('17. should render todo input and add button', () => {
     renderWithProviders();
-    expect(
-      screen.getByPlaceholderText('Юу хийх вэ...')
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', { name: 'Нэмэх' })
-    ).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Юу хийх вэ...')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Нэмэх' })).toBeInTheDocument();
   });
 
   it('18. should update input value when typing', () => {

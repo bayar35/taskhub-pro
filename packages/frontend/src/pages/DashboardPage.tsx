@@ -12,6 +12,7 @@ import {
 } from '../features/todo/todoApi';
 import { Button } from '../components/Button';
 import { SearchBar } from '../components/SearchBar';
+import { ThemeToggle } from '../components/ThemeToggle'; // ⬅️ НЭМЭХ
 
 export default function DashboardPage() {
   const user = useAppSelector((s) => s.auth.user);
@@ -25,7 +26,6 @@ export default function DashboardPage() {
   const [filter, setFilter] = useState('Бүгд');
   const [search, setSearch] = useState('');
 
-  // ⬇️ search параметр нэмэгдсэн
   const { data, isLoading } = useGetTodosQuery({
     category: filter,
     search: search || undefined,
@@ -63,56 +63,67 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
+      <header className="bg-white dark:bg-gray-800 shadow transition-colors">
         <div className="max-w-4xl mx-auto px-4 py-4 flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold">TaskHub Pro</h1>
-            <p className="text-sm text-gray-500">
+            <h1 className="text-2xl font-bold dark:text-white">
+              TaskHub Pro
+            </h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
               Сайн уу, <b>{user?.username}</b> 👋
             </p>
           </div>
-          <Button variant="danger" size="sm" onClick={handleLogout}>
-            Гарах
-          </Button>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <Button variant="danger" size="sm" onClick={handleLogout}>
+              Гарах
+            </Button>
+          </div>
         </div>
       </header>
 
       <main className="max-w-4xl mx-auto p-4">
         {stats && (
           <div className="grid grid-cols-3 gap-4 mb-6">
-            <div className="bg-white p-4 rounded-lg shadow text-center">
-              <p className="text-2xl font-bold">{stats.data.total}</p>
-              <p className="text-sm text-gray-500">Нийт</p>
+            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow text-center transition-colors">
+              <p className="text-2xl font-bold dark:text-white">
+                {stats.data.total}
+              </p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Нийт</p>
             </div>
-            <div className="bg-white p-4 rounded-lg shadow text-center">
-              <p className="text-2xl font-bold text-green-600">
+            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow text-center transition-colors">
+              <p className="text-2xl font-bold text-green-600 dark:text-green-400">
                 {stats.data.completed}
               </p>
-              <p className="text-sm text-gray-500">Дууссан</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Дууссан
+              </p>
             </div>
-            <div className="bg-white p-4 rounded-lg shadow text-center">
-              <p className="text-2xl font-bold text-orange-600">
+            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow text-center transition-colors">
+              <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">
                 {stats.data.pending}
               </p>
-              <p className="text-sm text-gray-500">Хүлээгдэж буй</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Хүлээгдэж буй
+              </p>
             </div>
           </div>
         )}
 
-        <div className="bg-white p-4 rounded-lg shadow mb-6 space-y-3">
+        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow mb-6 space-y-3 transition-colors">
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Юу хийх вэ..."
-            className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors"
             onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
           />
           <div className="flex gap-2">
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value as any)}
-              className="flex-1 px-3 py-2 border rounded-lg focus:outline-none"
+              className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 dark:text-white focus:outline-none transition-colors"
             >
               <option value="Хувийн">🏠 Хувийн</option>
               <option value="Ажил">💼 Ажил</option>
@@ -122,7 +133,6 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* ⬇️ SEARCH BAR НЭМЭХ */}
         <div className="mb-4">
           <SearchBar
             value={search}
@@ -139,7 +149,7 @@ export default function DashboardPage() {
               className={`px-3 py-1.5 rounded-full text-sm border transition ${
                 filter === cat
                   ? 'bg-blue-600 text-white border-blue-600'
-                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
               }`}
             >
               {cat}
@@ -148,9 +158,11 @@ export default function DashboardPage() {
         </div>
 
         {isLoading ? (
-          <p className="text-center py-8">Ачаалж байна...</p>
+          <p className="text-center py-8 dark:text-gray-300">
+            Ачаалж байна...
+          </p>
         ) : data?.todos.length === 0 ? (
-          <p className="text-center py-8 text-gray-500">
+          <p className="text-center py-8 text-gray-500 dark:text-gray-400">
             {search
               ? 'Хайлтад тохирох todo олдсонгүй'
               : 'Todo байхгүй. Нэмээрэй!'}
@@ -160,7 +172,7 @@ export default function DashboardPage() {
             {data?.todos.map((todo) => (
               <li
                 key={todo._id}
-                className={`bg-white p-3 rounded-lg shadow flex items-center gap-3 ${
+                className={`bg-white dark:bg-gray-800 p-3 rounded-lg shadow flex items-center gap-3 transition-colors ${
                   todo.completed ? 'opacity-60' : ''
                 }`}
               >
@@ -172,13 +184,15 @@ export default function DashboardPage() {
                 </button>
                 <div className="flex-1">
                   <p
-                    className={
-                      todo.completed ? 'line-through text-gray-500' : ''
-                    }
+                    className={`dark:text-white ${
+                      todo.completed
+                        ? 'line-through text-gray-500 dark:text-gray-500'
+                        : ''
+                    }`}
                   >
                     {todo.text}
                   </p>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
                     🏷️ {todo.category} • {todo.priority}
                   </p>
                 </div>
