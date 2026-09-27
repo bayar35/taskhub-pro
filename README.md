@@ -13,13 +13,16 @@
 ## ✨ Features
 
 - 🔐 **Authentication** — JWT access + refresh tokens, secure password hashing
+- 🔄 **Token Refresh** — HttpOnly cookie-based refresh token rotation
 - ✅ **Todo Management** — Create, read, update, toggle, delete
 - 🏷️ **Categories & Priorities** — Personal, Work, Study categories with priority levels
+- 🔍 **Search** — Debounced search by text and category
+- 🌗 **Dark Mode** — Light/dark theme with system preference detection
 - 📊 **Statistics** — Real-time total / completed / pending counts
 - 🎨 **Modern UI** — TailwindCSS, responsive design, smooth animations
 - 🔄 **Real-time Updates** — Socket.io for live sync across clients
-- 🧪 **Comprehensive Testing** — 78 tests across unit, integration, and E2E
-- 🚀 **CI/CD** — GitHub Actions pipeline with caching, 79-second runs
+- 🧪 **Comprehensive Testing** — 111 tests across unit, integration, and E2E
+- 🚀 **CI/CD** — GitHub Actions pipeline with caching and coverage reporting
 - ☁️ **Auto Deploy** — Vercel deployment on every push to `main`
 
 ---
@@ -30,7 +33,7 @@
 - **React 19** + TypeScript
 - **Redux Toolkit** + RTK Query (data fetching & caching)
 - **React Router** v7 (client-side routing)
-- **TailwindCSS** v3 (styling)
+- **TailwindCSS** v3 (styling with dark mode)
 - **React Hook Form** + Zod (form validation)
 - **Socket.io Client** (real-time updates)
 - **Vite** v5 (build tool)
@@ -40,9 +43,10 @@
 - **Express** 5.x (REST API)
 - **MongoDB** + Mongoose (database)
 - **Zod** (schema validation)
-- **JWT** (authentication)
+- **JWT** (authentication with access + refresh)
 - **Socket.io** (WebSocket server)
 - **Bcrypt** (password hashing)
+- **Cookie-parser** (HttpOnly refresh tokens)
 
 ### Testing
 - **Vitest** — Unit & integration tests
@@ -50,45 +54,48 @@
 - **Supertest** — HTTP API tests
 - **MongoDB Memory Server** — In-memory DB for tests
 - **Playwright** — End-to-end browser tests
+- **Codecov** — Coverage reporting
 
 ### DevOps
 - **npm workspaces** + **Turbo** (monorepo)
 - **GitHub Actions** (CI/CD)
 - **Vercel** (frontend hosting)
+- **MongoDB Atlas** (CI test database)
 - **Docker** (optional, for local dev)
 
 ---
 
 ## 📦 Project Structure
-
-```
 taskhub-pro/
 ├── packages/
-│   ├── frontend/              # React app (Vite + TypeScript)
-│   │   ├── src/
-│   │   │   ├── app/          # Redux store, hooks, API
-│   │   │   ├── components/   # Reusable UI components
-│   │   │   ├── features/     # Feature slices (auth, todo)
-│   │   │   ├── pages/        # Route pages
-│   │   │   ├── routes/       # Route guards
-│   │   │   └── lib/          # Utilities (API, socket, cn)
-│   │   ├── tests/            # Unit & component tests (54)
-│   │   └── e2e/              # Playwright E2E tests (5)
-│   │
-│   ├── backend/               # Express API
-│   │   ├── src/
-│   │   │   ├── config/       # Env validation
-│   │   │   ├── models/       # Mongoose schemas
-│   │   │   ├── modules/      # Feature modules (auth, todo)
-│   │   │   ├── middleware/   # Auth, validation, error
-│   │   │   └── app.ts        # Express app setup
-│   │   └── tests/            # Integration tests (19)
-│   │
-│   └── shared/                # Shared TypeScript types & Zod schemas
+│ ├── frontend/ # React app (Vite + TypeScript)
+│ │ ├── src/
+│ │ │ ├── app/ # Redux store, hooks, API
+│ │ │ ├── components/ # Reusable UI components (Button, SearchBar, ThemeToggle)
+│ │ │ ├── contexts/ # React Context (ThemeContext)
+│ │ │ ├── features/ # Feature slices (auth, todo)
+│ │ │ ├── hooks/ # Custom hooks (useDebounce)
+│ │ │ ├── pages/ # Route pages
+│ │ │ ├── routes/ # Route guards
+│ │ │ └── lib/ # Utilities (API, socket, cn)
+│ │ ├── tests/ # Unit & component tests (70)
+│ │ └── e2e/ # Playwright E2E tests (10)
+│ │
+│ ├── backend/ # Express API
+│ │ ├── src/
+│ │ │ ├── config/ # Env validation
+│ │ │ ├── models/ # Mongoose schemas (User, Todo, RefreshToken)
+│ │ │ ├── modules/ # Feature modules (auth, todo)
+│ │ │ ├── middleware/ # Auth, validation, error
+│ │ │ └── app.ts # Express app setup
+│ │ └── tests/ # Integration tests (31)
+│ │
+│ └── shared/ # Shared TypeScript types & Zod schemas
 │
-├── .github/workflows/         # CI/CD pipelines
-└── package.json               # Root workspace config
-```
+├── .github/workflows/ # CI/CD pipelines
+└── package.json # Root workspace config
+
+text
 
 ---
 
@@ -111,13 +118,10 @@ npm install
 
 # Build shared package
 npm run build --workspace=packages/shared
-```
+Environment Setup
+Create .env in packages/backend/:
 
-### Environment Setup
-
-Create `.env` in `packages/backend/`:
-
-```env
+env
 NODE_ENV=development
 PORT=5000
 MONGO_URI=mongodb://localhost:27017/taskhub
@@ -126,167 +130,177 @@ JWT_REFRESH_SECRET=your-32-character-refresh-secret-min-32
 JWT_EXPIRES_IN=15m
 JWT_REFRESH_EXPIRES_IN=7d
 CORS_ORIGIN=http://localhost:5173
-```
+Create .env in packages/frontend/:
 
-Create `.env` in `packages/frontend/`:
-
-```env
+env
 VITE_API_URL=http://localhost:5000
-```
-
-### Development
-
-```bash
+Development
+bash
 # Run both frontend & backend
 npm run dev
 
 # Frontend: http://localhost:5173
 # Backend:  http://localhost:5000
-```
+🧪 Testing
+This project has 111 tests across three levels:
 
----
-
-## 🧪 Testing
-
-This project has **78 tests** across three levels:
-
-| Level | Tests | Tool | Command |
-|---|---|---|---|
-| Unit/Integration (backend) | 19 | Vitest + Supertest | `npm run test --workspace=packages/backend` |
-| Unit/Component (frontend) | 54 | Vitest + Testing Library | `npm run test --workspace=packages/frontend` |
-| E2E (full-stack) | 5 | Playwright | `npm run test:e2e --workspace=packages/frontend` |
-
-### Run all tests
-
-```bash
+Level	Tests	Tool	Command
+Unit/Integration (backend)	31	Vitest + Supertest	npm run test --workspace=packages/backend
+Unit/Component (frontend)	70	Vitest + Testing Library	npm run test --workspace=packages/frontend
+E2E (full-stack)	10	Playwright	npm run test:e2e --workspace=packages/frontend
+Run all tests
+bash
 # Backend
 npm run test --workspace=packages/backend
 
 # Frontend
 npm run test --workspace=packages/frontend
 
+# Backend with coverage
+npm run test:coverage --workspace=packages/backend
+
 # Frontend with coverage
 npm run test:coverage --workspace=packages/frontend
 
 # E2E (requires dev server running)
 npm run test:e2e --workspace=packages/frontend
-```
+Coverage
+Package	Statements	Branches	Functions	Lines
+Backend	72.83%	70.86%	77.55%	72.83%
+Frontend	73.33%	81.52%	54.71%	73.33%
+Highlights:
 
-### Coverage
+components/Button.tsx — 100%
 
-Frontend coverage: **75.43%**
+components/SearchBar.tsx — 100%
 
-- `components/Button.tsx` — 100%
-- `pages/DashboardPage.tsx` — 96.47%
-- `pages/LoginPage.tsx` — 88.15%
-- `pages/RegisterPage.tsx` — 89.47%
-- `pages/NotFoundPage.tsx` — 100%
-- `routes/ProtectedRoute.tsx` — 100%
-- `features/auth/authSlice.ts` — 100%
+components/ThemeToggle.tsx — 100%
 
----
+hooks/useDebounce.ts — 100%
 
-## 🔄 CI/CD
+pages/DashboardPage.tsx — 94.73%
 
-Every push to `main` triggers:
+pages/LoginPage.tsx — 88.15%
 
-1. **Install dependencies** (with cache)
-2. **Build shared package**
-3. **Run backend tests** (19)
-4. **Run frontend tests** (54)
-5. **Install Playwright** (Chromium)
-6. **Run E2E tests** (5)
-7. **Upload coverage to Codecov**
+pages/RegisterPage.tsx — 89.47%
 
-**Total runtime:** ~79 seconds
+pages/NotFoundPage.tsx — 100%
 
-View pipeline: [Actions](https://github.com/bayar35/taskhub-pro/actions)
+routes/ProtectedRoute.tsx — 100%
 
----
+features/auth/authSlice.ts — 100%
 
-## 📡 API Endpoints
+contexts/ThemeContext.tsx — 90.69%
 
-### Auth
+🔄 CI/CD
+Every push to main triggers:
 
-| Method | Endpoint | Description |
-|---|---|---|
-| POST | `/api/v1/auth/register` | Register new user |
-| POST | `/api/v1/auth/login` | Login (returns JWT) |
-| POST | `/api/v1/auth/logout` | Logout |
-| GET | `/api/v1/auth/me` | Get current user |
+Install dependencies (with cache)
 
-### Todos
+Build shared package
 
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | `/api/v1/todos?category=...` | Get all todos (filter by category) |
-| GET | `/api/v1/todos/stats` | Get todo statistics |
-| POST | `/api/v1/todos` | Create todo |
-| PUT | `/api/v1/todos/:id/toggle` | Toggle completed |
-| DELETE | `/api/v1/todos/:id` | Delete todo |
+Run backend tests with coverage (31)
 
----
+Run frontend tests with coverage (70)
 
-## 🏗 Architecture Decisions
+Install Playwright (Chromium)
 
-### Why Monorepo?
-- **Shared types** between frontend & backend (`@taskhub/shared`)
-- **Single install** with npm workspaces
-- **Atomic commits** across packages
+Run E2E tests (10)
 
-### Why RTK Query?
-- **Automatic caching** — reduces network requests
-- **Optimistic updates** — instant UI feedback
-- **Type-safe** — Zod schemas validated end-to-end
+Upload backend coverage to Codecov
 
-### Why MongoDB Memory Server?
-- **Isolated tests** — no shared state between tests
-- **Fast** — in-memory database
-- **CI-compatible** — works on Ubuntu runners
+Upload frontend coverage to Codecov
 
-### Why Playwright over Cypress?
-- **Faster** — parallel execution, modern API
-- **Multi-browser** — Chromium, Firefox, WebKit
-- **Better DX** — auto-wait, trace viewer
+Total runtime: ~3-4 minutes
 
----
+View pipeline: Actions
 
-## 📈 Roadmap
+📡 API Endpoints
+Auth
+Method	Endpoint	Description
+POST	/api/v1/auth/register	Register new user
+POST	/api/v1/auth/login	Login (returns JWT + sets refresh cookie)
+POST	/api/v1/auth/refresh	Refresh access token
+POST	/api/v1/auth/logout	Logout (clears refresh token)
+GET	/api/v1/auth/me	Get current user
+Todos
+Method	Endpoint	Description
+GET	/api/v1/todos	Get all todos
+GET	/api/v1/todos?category=...	Filter by category
+GET	/api/v1/todos?search=...	Search by text (case-insensitive)
+GET	/api/v1/todos?search=...&category=...	Combined search + filter
+GET	/api/v1/todos/stats	Get todo statistics
+POST	/api/v1/todos	Create todo
+PATCH	/api/v1/todos/:id	Update todo
+PUT	/api/v1/todos/:id/toggle	Toggle completed
+DELETE	/api/v1/todos/:id	Delete todo
+🏗 Architecture Decisions
+Why Monorepo?
+Shared types between frontend & backend (@taskhub/shared)
 
-- [x] Authentication (JWT)
-- [x] Todo CRUD
-- [x] Categories & priorities
-- [x] Statistics dashboard
-- [x] 78 tests (unit + integration + E2E)
-- [x] CI/CD pipeline
-- [x] Auto-deploy to Vercel
-- [ ] Refresh token rotation
-- [ ] Search & filter
-- [ ] Dark mode
-- [ ] Push notifications
-- [ ] Mobile app (React Native)
+Single install with npm workspaces
 
----
+Atomic commits across packages
 
-## 🤝 Contributing
+Why RTK Query?
+Automatic caching — reduces network requests
 
+Optimistic updates — instant UI feedback
+
+Type-safe — Zod schemas validated end-to-end
+
+Why Refresh Tokens in HttpOnly Cookies?
+XSS-safe — JavaScript cannot access the token
+
+CSRF-mitigated — sameSite: strict cookie option
+
+Rotatable — token stored in DB, can be revoked on logout
+
+Why MongoDB Atlas for CI?
+Reliable — no local DB setup needed
+
+Fast — hosted cluster with low latency
+
+Free tier — M0 cluster supports development needs
+
+Why Playwright over Cypress?
+Faster — parallel execution, modern API
+
+Multi-browser — Chromium, Firefox, WebKit
+
+Better DX — auto-wait, trace viewer
+
+📈 Roadmap
+☑ Authentication (JWT)
+☑ Todo CRUD
+☑ Categories & priorities
+☑ Statistics dashboard
+☑ Refresh token rotation
+☑ Search & filter
+☑ Dark mode
+☑ 111 tests (unit + integration + E2E)
+☑ CI/CD pipeline
+☑ Auto-deploy to Vercel
+☑ Codecov coverage reporting
+□ Push notifications
+□ Mobile app (React Native)
+□ Multi-language support (i18n)
+🤝 Contributing
 This is a personal portfolio project, but suggestions are welcome.
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing`)
-5. Open a Pull Request
+Fork the repository
 
----
+Create a feature branch (git checkout -b feature/amazing)
 
-## 📝 License
+Commit changes (git commit -m 'Add amazing feature')
 
-MIT © [bayar35](https://github.com/bayar35)
+Push to branch (git push origin feature/amazing)
 
----
+Open a Pull Request
 
-## 🙏 Acknowledgements
+📝 License
+MIT © bayar35
 
+🙏 Acknowledgements
 Built with ❤️ using modern web technologies.
 Inspired by real-world senior engineering practices.

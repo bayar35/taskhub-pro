@@ -15,9 +15,9 @@ jobs:
 
     env:
       NODE_ENV: test
-      MONGO_URI: ${{ secrets.MONGO_URI_TEST }}      # ← ЗАССАН
-      JWT_SECRET: ${{ secrets.JWT_SECRET }}          # ← ЗАССАН
-      JWT_REFRESH_SECRET: ${{ secrets.JWT_REFRESH_SECRET }}  # ← ЗАССАН
+      MONGO_URI: ${{ secrets.MONGO_URI_TEST }}
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}
+      JWT_REFRESH_SECRET: ${{ secrets.JWT_REFRESH_SECRET }}
       JWT_EXPIRES_IN: 15m
       JWT_REFRESH_EXPIRES_IN: 7d
       CLIENT_URL: http://localhost:5173
@@ -48,12 +48,13 @@ jobs:
       - name: Build shared package
         run: npm run build --workspace=packages/shared
 
-      - name: Run backend tests
-        run: npm run test --workspace=packages/backend
-        # MONGO_URI нь env блокоос автоматаар дамжина
+      # ⬇️ BACKEND with coverage
+      - name: Run backend tests with coverage
+        run: npm run test:coverage --workspace=packages/backend
 
-      - name: Run frontend tests
-        run: npm run test --workspace=packages/frontend
+      # ⬇️ FRONTEND with coverage
+      - name: Run frontend tests with coverage
+        run: npm run test:coverage --workspace=packages/frontend
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
@@ -63,11 +64,18 @@ jobs:
         run: npm run test:e2e --workspace=packages/frontend
         continue-on-error: true
 
-      - name: Generate frontend coverage
-        run: npm run test:coverage --workspace=packages/frontend
+      # ⬇️ CODECOV: Backend coverage upload
+      - name: Upload backend coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./packages/backend/coverage/lcov.info
+          flags: backend
+          fail_ci_if_error: false
         continue-on-error: true
 
-      - name: Upload coverage to Codecov
+      # ⬇️ CODECOV: Frontend coverage upload
+      - name: Upload frontend coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
