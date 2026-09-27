@@ -4,12 +4,19 @@ import type { ITodoFilters } from '@taskhub/shared';
 interface FindOptions {
   userId: string;
   filters: ITodoFilters;
+  sort?: string;
   page?: number;
   limit?: number;
 }
 
 export class TodoRepository {
-  async findAll({ userId, filters, page = 1, limit = 50 }: FindOptions) {
+  async findAll({
+    userId,
+    filters,
+    sort = '-createdAt',
+    page = 1,
+    limit = 50,
+  }: FindOptions) {
     const query: any = { userId };
 
     if (filters.category && filters.category !== 'Бүгд') {
@@ -24,18 +31,24 @@ export class TodoRepository {
       query.priority = filters.priority;
     }
 
-    if (filters.search) {
-      query.text = { $regex: filters.search, $options: 'i' };
+    // ⬇️ SEARCH — text болон category-аар case-insensitive хайх
+    if (filters.search && filters.search.trim()) {
+      const searchRegex = new RegExp(filters.search.trim(), 'i');
+      query.$or = [{ text: searchRegex }, { category: searchRegex }];
+    }
+
+    // ⬇️ Sort
+    const sortObj: Record<string, 1 | -1> = {};
+    if (sort.startsWith('-')) {
+      sortObj[sort.slice(1)] = -1;
+    } else {
+      sortObj[sort] = 1;
     }
 
     const skip = (page - 1) * limit;
 
     const [todos, total] = await Promise.all([
-      Todo.find(query)
-        .sort({ completed: 1, createdAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .lean(),
+      Todo.find(query).sort(sortObj).skip(skip).limit(limit).lean(),
       Todo.countDocuments(query),
     ]);
 

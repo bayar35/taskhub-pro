@@ -210,4 +210,69 @@ describe('Todo API', () => {
       expect(res.body.data.total).toBe(0);
     });
   });
+
+    // ============ SEARCH (5 тест) ============
+  describe('GET /api/v1/todos?search=...', () => {
+    beforeEach(async () => {
+      await request(app)
+        .post('/api/v1/todos')
+        .set(auth())
+        .send({ text: 'React сурах', category: 'Хичээл' });
+      await request(app)
+        .post('/api/v1/todos')
+        .set(auth())
+        .send({ text: 'TypeScript дасгал', category: 'Хичээл' });
+      await request(app)
+        .post('/api/v1/todos')
+        .set(auth())
+        .send({ text: 'Худалдан авалт', category: 'Хувийн' });
+    });
+
+    it('13. should search by text (case-insensitive)', async () => {
+      const res = await request(app)
+        .get('/api/v1/todos?search=react')
+        .set(auth());
+
+      expect(res.status).toBe(200);
+      expect(res.body.todos).toHaveLength(1);
+      expect(res.body.todos[0].text).toBe('React сурах');
+    });
+
+    it('14. should search by partial text', async () => {
+      const res = await request(app)
+        .get('/api/v1/todos?search=Type')
+        .set(auth());
+
+      expect(res.status).toBe(200);
+      expect(res.body.todos).toHaveLength(1);
+      expect(res.body.todos[0].text).toContain('TypeScript');
+    });
+
+    it('15. should search by category', async () => {
+      const res = await request(app)
+        .get('/api/v1/todos?search=Хичээл')
+        .set(auth());
+
+      expect(res.status).toBe(200);
+      expect(res.body.todos).toHaveLength(2);
+    });
+
+    it('16. should return empty array for no match', async () => {
+      const res = await request(app)
+        .get('/api/v1/todos?search=xyz123')
+        .set(auth());
+
+      expect(res.status).toBe(200);
+      expect(res.body.todos).toHaveLength(0);
+    });
+
+    it('17. should combine search with category filter', async () => {
+      const res = await request(app)
+        .get('/api/v1/todos?search=React&category=Хичээл')
+        .set(auth());
+
+      expect(res.status).toBe(200);
+      expect(res.body.todos).toHaveLength(1);
+    });
+  });
 });

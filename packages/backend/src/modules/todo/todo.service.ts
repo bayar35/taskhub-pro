@@ -2,23 +2,24 @@ import {
   createTodoSchema,
   updateTodoSchema,
   type ITodo,
-  type ITodoFilters,
+  type TodoQueryInput,
 } from '@taskhub/shared';
 import { todoRepository } from './todo.repository';
 import { ApiError } from '../../utils/ApiError';
 
 export class TodoService {
-  async list(
-    userId: string,
-    filters: ITodoFilters,
-    page?: number,
-    limit?: number
-  ) {
+  async list(userId: string, query: TodoQueryInput) {
     const result = await todoRepository.findAll({
       userId,
-      filters,
-      page,
-      limit,
+      filters: {
+        search: query.search,
+        category: query.category,
+        priority: query.priority,
+        completed: query.completed,
+      },
+      sort: query.sort,
+      page: query.page,
+      limit: query.limit,
     });
 
     return {
