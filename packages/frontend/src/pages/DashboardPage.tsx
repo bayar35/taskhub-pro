@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import { useAppDispatch, useAppSelector } from '../app/hooks';
 import { logout } from '../features/auth/authSlice';
@@ -11,6 +11,7 @@ import {
   useDeleteTodoMutation,
 } from '../features/todo/todoApi';
 import { Button } from '../components/Button';
+import { SearchBar } from '../components/SearchBar';
 
 export default function DashboardPage() {
   const user = useAppSelector((s) => s.auth.user);
@@ -22,12 +23,21 @@ export default function DashboardPage() {
     'Хувийн'
   );
   const [filter, setFilter] = useState('Бүгд');
+  const [search, setSearch] = useState('');
 
-  const { data, isLoading } = useGetTodosQuery({ category: filter });
+  // ⬇️ search параметр нэмэгдсэн
+  const { data, isLoading } = useGetTodosQuery({
+    category: filter,
+    search: search || undefined,
+  });
   const { data: stats } = useGetTodoStatsQuery();
   const [createTodo] = useCreateTodoMutation();
   const [toggleTodo] = useToggleTodoMutation();
   const [deleteTodo] = useDeleteTodoMutation();
+
+  const handleSearchChange = useCallback((value: string) => {
+    setSearch(value);
+  }, []);
 
   const handleAdd = async () => {
     if (!input.trim()) return;
@@ -112,6 +122,15 @@ export default function DashboardPage() {
           </div>
         </div>
 
+        {/* ⬇️ SEARCH BAR НЭМЭХ */}
+        <div className="mb-4">
+          <SearchBar
+            value={search}
+            onChange={handleSearchChange}
+            placeholder="Даалгавар хайх..."
+          />
+        </div>
+
         <div className="flex gap-2 mb-4 flex-wrap">
           {['Бүгд', 'Хувийн', 'Ажил', 'Хичээл'].map((cat) => (
             <button
@@ -132,7 +151,9 @@ export default function DashboardPage() {
           <p className="text-center py-8">Ачаалж байна...</p>
         ) : data?.todos.length === 0 ? (
           <p className="text-center py-8 text-gray-500">
-            Todo байхгүй. Нэмээрэй!
+            {search
+              ? 'Хайлтад тохирох todo олдсонгүй'
+              : 'Todo байхгүй. Нэмээрэй!'}
           </p>
         ) : (
           <ul className="space-y-2">
