@@ -1,0 +1,35 @@
+coverage:
+  status:
+    project:
+      default:
+        target: 70%
+        threshold: 5%
+        if_ci_failed: error
+    patch:
+      default:
+        target: 70%
+        threshold: 5%
+
+flags:
+  backend:
+    paths:
+      - packages/backend/src/
+    carryforward: true
+  frontend:
+    paths:
+      - packages/frontend/src/
+    carryforward: true
+
+comment:
+  layout: 'reach, diff, flags, files'
+  behavior: default
+  require_changes: false
+  require_base: false
+  require_head: true
+
+ignore:
+  - 'packages/*/tests/**'
+  - 'packages/*/e2e/**'
+  - 'packages/*/dist/**'
+  - '**/*.config.ts'
+  - '**/*.config.js'
