@@ -6,6 +6,7 @@ import type {
 } from '@reduxjs/toolkit/query/react';
 import { API_URL } from '../lib/api';
 import { setAccessToken, logout } from '../features/auth/authSlice';
+tagTypes: ['Todo', 'Notification'],
 
 const baseQuery = fetchBaseQuery({
   baseUrl: `${API_URL}/api/v1`,

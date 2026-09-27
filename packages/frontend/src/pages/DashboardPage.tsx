@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { useAppDispatch, useAppSelector } from '../app/hooks';
 import { logout } from '../features/auth/authSlice';
@@ -12,12 +12,22 @@ import {
 } from '../features/todo/todoApi';
 import { Button } from '../components/Button';
 import { SearchBar } from '../components/SearchBar';
-import { ThemeToggle } from '../components/ThemeToggle'; // ⬅️ НЭМЭХ
+import { ThemeToggle } from '../components/ThemeToggle';
+import { NotificationBell } from '../components/NotificationBell';
+import { connectSocket, disconnectSocket } from '../lib/socket';
 
 export default function DashboardPage() {
   const user = useAppSelector((s) => s.auth.user);
   const dispatch = useAppDispatch();
   const [logoutApi] = useLogoutMutation();
+
+  // ⬇️ SOCKET CONNECT — ЭНЭ ФУНКЦ ДОТОР БАЙХ ЁСТОЙ
+  useEffect(() => {
+    if (user?._id) {
+      connectSocket(user._id);
+      return () => disconnectSocket();
+    }
+  }, [user?._id]);
 
   const [input, setInput] = useState('');
   const [category, setCategory] = useState<'Хувийн' | 'Ажил' | 'Хичээл'>(
@@ -67,14 +77,13 @@ export default function DashboardPage() {
       <header className="bg-white dark:bg-gray-800 shadow transition-colors">
         <div className="max-w-4xl mx-auto px-4 py-4 flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold dark:text-white">
-              TaskHub Pro
-            </h1>
+            <h1 className="text-2xl font-bold dark:text-white">TaskHub Pro</h1>
             <p className="text-sm text-gray-500 dark:text-gray-400">
               Сайн уу, <b>{user?.username}</b> 👋
             </p>
           </div>
           <div className="flex items-center gap-2">
+            <NotificationBell />
             <ThemeToggle />
             <Button variant="danger" size="sm" onClick={handleLogout}>
               Гарах
@@ -83,6 +92,7 @@ export default function DashboardPage() {
         </div>
       </header>
 
+      {/* ... бусад JSX хэвээр ... */}
       <main className="max-w-4xl mx-auto p-4">
         {stats && (
           <div className="grid grid-cols-3 gap-4 mb-6">
@@ -96,9 +106,7 @@ export default function DashboardPage() {
               <p className="text-2xl font-bold text-green-600 dark:text-green-400">
                 {stats.data.completed}
               </p>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                Дууссан
-              </p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Дууссан</p>
             </div>
             <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow text-center transition-colors">
               <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">
@@ -158,9 +166,7 @@ export default function DashboardPage() {
         </div>
 
         {isLoading ? (
-          <p className="text-center py-8 dark:text-gray-300">
-            Ачаалж байна...
-          </p>
+          <p className="text-center py-8 dark:text-gray-300">Ачаалж байна...</p>
         ) : data?.todos.length === 0 ? (
           <p className="text-center py-8 text-gray-500 dark:text-gray-400">
             {search

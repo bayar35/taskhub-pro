@@ -14,6 +14,7 @@ import {
 
 import authRoutes from './modules/auth/auth.routes';
 import todoRoutes from './modules/todo/todo.routes';
+import notificationRoutes from './modules/notification/notification.routes'; // ⬅️ ЭНД ОРУУЛАХ
 
 const app: Application = express();
 
@@ -42,7 +43,7 @@ if (env.NODE_ENV !== 'test') {
 // 🛡️ Rate limiting
 app.use('/api', apiLimiter);
 
-// 🏥 Health check — ЗӨВ БАЙРЛАЛД
+// 🏥 Health check
 app.get('/health', (req, res) => {
   res.json({
     status: 'ok',
@@ -52,9 +53,10 @@ app.get('/health', (req, res) => {
   });
 });
 
-// 🚏 Routes — ЗӨВХӨН 1 УДАА бүртгэх
+// 🚏 Routes
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/todos', todoRoutes);
+app.use('/api/v1/notifications', notificationRoutes); // ⬅️ ЭНД БАЙХ ЁСТОЙ
 
 // ❌ Error handlers (хамгийн сүүлд)
 app.use(notFound);

@@ -6,6 +6,7 @@ import {
 } from '@taskhub/shared';
 import { todoRepository } from './todo.repository';
 import { ApiError } from '../../utils/ApiError';
+import { notificationService } from '../notification/notification.service';
 
 export class TodoService {
   async list(userId: string, query: TodoQueryInput) {
@@ -48,6 +49,19 @@ export class TodoService {
       tags: data.tags || [],
       completed: false,
     });
+
+    // ⬇️ Notification илгээх (алдаа гарвал алгасах)
+    try {
+      await notificationService.create({
+        userId,
+        type: 'success',
+        title: 'Шинэ даалгавар нэмэгдлээ',
+        message: `"${data.text}" амжилттай нэмэгдлээ`,
+        link: '/dashboard',
+      });
+    } catch (err) {
+      console.error('Notification илгээх алдаа:', err);
+    }
 
     return this.toPublicTodo(todo);
   }
