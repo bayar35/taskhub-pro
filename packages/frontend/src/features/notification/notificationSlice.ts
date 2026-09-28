@@ -1,63 +1,98 @@
 import { createSlice } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
-import type { INotification } from '@taskhub/shared';
 
-interface NotificationState {
-  items: INotification[];
-  unreadCount: number;
-  loading: boolean;
+export interface AppNotification {
+  _id: string;
+  userId: string;
+  title: string;
+  message: string;
+  read: boolean;
+  createdAt: string;
 }
 
+interface NotificationState {
+  notifications: AppNotification[];
+  unreadCount: number;
+}
+
+// ⬇️ ЭНЭ ХЭСЭГ ХАМГИЙН ЧУХАЛ - initialState-д хоосон массив байх ёстой
 const initialState: NotificationState = {
-  items: [],
+  notifications: [],
   unreadCount: 0,
-  loading: false,
 };
 
 const notificationSlice = createSlice({
-  name: 'notifications',
+  name: 'notification',
   initialState,
   reducers: {
-    setNotifications(state, action: PayloadAction<INotification[]>) {
-      state.items = action.payload;
-    },
-    addNotification(state, action: PayloadAction<INotification>) {
-      state.items.unshift(action.payload);
+    // Socket-ээс шинэ мэдэгдэл ирэх үед дуудагдана
+    addNotification: (state, action: PayloadAction<AppNotification>) => {
+      // Хамгаалалт: хэрэв notifications undefined бол хоосон массив үүсгэх
+      if (!state.notifications) {
+        state.notifications = [];
+      }
+      state.notifications.unshift(action.payload);
       if (!action.payload.read) {
         state.unreadCount += 1;
       }
     },
-    markAsRead(state, action: PayloadAction<string>) {
-      const item = state.items.find((n) => n._id === action.payload);
-      if (item && !item.read) {
-        item.read = true;
+
+    // Бүх мэдэгдлийг татах үед дуудагдана
+    setNotifications: (state, action: PayloadAction<AppNotification[]>) => {
+      if (!state.notifications) {
+        state.notifications = [];
+      }
+      state.notifications = action.payload;
+      state.unreadCount = action.payload.filter((n) => !n.read).length;
+    },
+
+    // Нэг мэдэгдлийг уншсан гэж тэмдэглэх
+    markAsRead: (state, action: PayloadAction<string>) => {
+      const notification = state.notifications.find(
+        (n) => n._id === action.payload
+      );
+      if (notification && !notification.read) {
+        notification.read = true;
         state.unreadCount = Math.max(0, state.unreadCount - 1);
       }
     },
-    markAllAsRead(state) {
-      state.items.forEach((n) => (n.read = true));
+
+    // Бүх мэдэгдлийг уншсан гэж тэмдэглэх
+    markAllAsRead: (state) => {
+      state.notifications.forEach((n) => {
+        n.read = true;
+      });
       state.unreadCount = 0;
     },
-    removeNotification(state, action: PayloadAction<string>) {
-      const item = state.items.find((n) => n._id === action.payload);
-      if (item && !item.read) {
-        state.unreadCount = Math.max(0, state.unreadCount - 1);
+
+    // Мэдэгдэл устгах
+    removeNotification: (state, action: PayloadAction<string>) => {
+      const index = state.notifications.findIndex(
+        (n) => n._id === action.payload
+      );
+      if (index !== -1) {
+        if (!state.notifications[index].read) {
+          state.unreadCount = Math.max(0, state.unreadCount - 1);
+        }
+        state.notifications.splice(index, 1);
       }
-      state.items = state.items.filter((n) => n._id !== action.payload);
     },
-    setUnreadCount(state, action: PayloadAction<number>) {
-      state.unreadCount = action.payload;
+
+    // Бүх мэдэгдлийг цэвэрлэх (logout хийх үед)
+    clearNotifications: (state) => {
+      state.notifications = [];
+      state.unreadCount = 0;
     },
   },
 });
 
 export const {
-  setNotifications,
   addNotification,
+  setNotifications,
   markAsRead,
   markAllAsRead,
   removeNotification,
-  setUnreadCount,
+  clearNotifications,
 } = notificationSlice.actions;
 
 export default notificationSlice.reducer;
