@@ -7,11 +7,40 @@ import { verifyAccessToken } from '../utils/jwt';
 let io: Server;
 
 export function initSocket(server: HTTPServer): Server {
+  // CORS-д зориулсан зөвшөөрөгдөх домэйнуудын жагсаалт
+  const allowedOrigins = [
+    'http://localhost:5173',
+    'http://localhost:3000',
+    'https://taskhub-pro-sooty.vercel.app',
+  ];
+
+  // Хэрэв env.CLIENT_URL байвал жагсаалтад нэмэх
+  if (env.CLIENT_URL && !allowedOrigins.includes(env.CLIENT_URL)) {
+    allowedOrigins.push(env.CLIENT_URL);
+  }
+
   io = new Server(server, {
     cors: {
-      origin: env.CLIENT_URL,
+      origin: (origin, callback) => {
+        // Хэрэв origin байхгүй бол (жишээ нь mobile app) зөвшөөрөх
+        if (!origin) return callback(null, true);
+        
+        // Хэрэв origin зөвшөөрөгдсөн жагсаалтад байвал зөвшөөрөх
+        if (allowedOrigins.includes(origin)) {
+          return callback(null, true);
+        }
+        
+        // Бусад тохиолдолд алдаа буцаах
+        logger.warn(`CORS-д хориглосон origin: ${origin}`);
+        return callback(new Error('CORS policy: Origin not allowed'));
+      },
       credentials: true,
+      methods: ['GET', 'POST'],
     },
+    // Render-ийн урт холболтыг дэмжих тохиргоо
+    transports: ['websocket', 'polling'],
+    pingTimeout: 60000,
+    pingInterval: 25000,
   });
 
   // Authentication middleware
@@ -35,6 +64,7 @@ export function initSocket(server: HTTPServer): Server {
     const userId = (socket as any).userId;
     logger.info(`Socket холбогдлоо: ${socket.id} (user: ${userId})`);
 
+    // Хэрэглэгчийн өрөөнд нэгдэх
     socket.join(`user:${userId}`);
 
     socket.on('disconnect', () => {
