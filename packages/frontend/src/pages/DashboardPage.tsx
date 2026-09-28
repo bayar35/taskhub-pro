@@ -37,7 +37,7 @@ export default function DashboardPage() {
   const [search, setSearch] = useState('');
 
   const { data, isLoading } = useGetTodosQuery({
-    category: filter,
+    category: filter === 'Бүгд' ? undefined : filter,
     search: search || undefined,
   });
   const { data: stats } = useGetTodoStatsQuery();
