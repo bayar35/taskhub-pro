@@ -29,14 +29,19 @@ export const todoApi = api.injectEndpoints({
       query: (params) => {
         const searchParams = new URLSearchParams();
         Object.entries(params).forEach(([key, value]) => {
+          // "Бүгд" сонгогдсон үед category нь 'all' эсвэл '' байж болно.
+          // Тиймээс зөвхөн 'all' болон '' биш утгуудыг л URL-д нэмнэ.
+          if (key === 'category' && (value === 'all' || value === '')) {
+            return; // category-г огт нэмэхгүй
+          }
           if (value !== undefined && value !== '') {
             searchParams.append(key, String(value));
-          }
-        });
-        return `/todos?${searchParams}`;
-      },
-      providesTags: ['Todo'],
-    }),
+              }
+            });
+            return `/todos?${searchParams}`;
+          },
+          providesTags: ['Todo'],
+        }),
 
     getTodoStats: builder.query<
       { data: { total: number; completed: number; pending: number } },
