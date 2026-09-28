@@ -3,10 +3,13 @@ import {
   updateTodoSchema,
   type ITodo,
   type TodoQueryInput,
+  type CreateTodoInput,
 } from '@taskhub/shared';
 import { todoRepository } from './todo.repository';
 import { ApiError } from '../../utils/ApiError';
 import { notificationService } from '../notification/notification.service';
+import { User } from '../../models/User.model';
+import { sendEmail, getTodoCreatedEmail } from '../../utils/mailer';
 
 export class TodoService {
   async list(userId: string, query: TodoQueryInput) {
@@ -50,7 +53,7 @@ export class TodoService {
       completed: false,
     });
 
-    // ⬇️ Notification илгээх (алдаа гарвал алгасах)
+    // 1. Notification илгээх (алдаа гарвал алгасах)
     try {
       await notificationService.create({
         userId,
@@ -61,6 +64,20 @@ export class TodoService {
       });
     } catch (err) {
       console.error('Notification илгээх алдаа:', err);
+    }
+
+    // 2. И-мэйл илгээх (async, алдаа гарвал зогсоохгүй)
+    try {
+      const user = await User.findById(userId);
+      if (user?.email) {
+        sendEmail(
+          user.email,
+          'Шинэ даалгавар нэмэгдлээ',
+          getTodoCreatedEmail(user.username, todo.text)
+        ).catch(() => {});
+      }
+    } catch (err) {
+      console.error('И-мэйл илгээх алдаа:', err);
     }
 
     return this.toPublicTodo(todo);

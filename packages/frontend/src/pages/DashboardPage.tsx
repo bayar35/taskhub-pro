@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 import { useAppDispatch, useAppSelector } from '../app/hooks';
 import { logout } from '../features/auth/authSlice';
 import { useLogoutMutation } from '../features/auth/authApi';
@@ -17,11 +18,19 @@ import { NotificationBell } from '../components/NotificationBell';
 import { connectSocket, disconnectSocket } from '../lib/socket';
 
 export default function DashboardPage() {
+  const { t, i18n } = useTranslation();
+
+  const toggleLanguage = () => {
+    const newLang = i18n.language === 'mn' ? 'en' : 'mn';
+    i18n.changeLanguage(newLang);
+    localStorage.setItem('language', newLang);
+  };
+
   const user = useAppSelector((s) => s.auth.user);
   const dispatch = useAppDispatch();
   const [logoutApi] = useLogoutMutation();
 
-  // ⬇️ SOCKET CONNECT — ЭНЭ ФУНКЦ ДОТОР БАЙХ ЁСТОЙ
+  // Socket холболт
   useEffect(() => {
     if (user?._id) {
       connectSocket(user._id);
@@ -79,20 +88,26 @@ export default function DashboardPage() {
           <div>
             <h1 className="text-2xl font-bold dark:text-white">TaskHub Pro</h1>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              Сайн уу, <b>{user?.username}</b> 👋
+              {t('dashboard.welcome')}, <b>{user?.username}</b> 👋
             </p>
           </div>
           <div className="flex items-center gap-2">
+            {/* Хэл солих товч */}
+            <button
+              onClick={toggleLanguage}
+              className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition text-sm"
+            >
+              {i18n.language === 'mn' ? '🇲🇳 MN' : '🇬🇧 EN'}
+            </button>
             <NotificationBell />
             <ThemeToggle />
             <Button variant="danger" size="sm" onClick={handleLogout}>
-              Гарах
+              {t('dashboard.logout')}
             </Button>
           </div>
         </div>
       </header>
 
-      {/* ... бусад JSX хэвээр ... */}
       <main className="max-w-4xl mx-auto p-4">
         {stats && (
           <div className="grid grid-cols-3 gap-4 mb-6">
@@ -100,20 +115,24 @@ export default function DashboardPage() {
               <p className="text-2xl font-bold dark:text-white">
                 {stats.data.total}
               </p>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Нийт</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                {t('dashboard.total')}
+              </p>
             </div>
             <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow text-center transition-colors">
               <p className="text-2xl font-bold text-green-600 dark:text-green-400">
                 {stats.data.completed}
               </p>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Дууссан</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                {t('dashboard.completed')}
+              </p>
             </div>
             <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow text-center transition-colors">
               <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">
                 {stats.data.pending}
               </p>
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                Хүлээгдэж буй
+                {t('dashboard.pending')}
               </p>
             </div>
           </div>
@@ -123,7 +142,7 @@ export default function DashboardPage() {
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Юу хийх вэ..."
+            placeholder={t('dashboard.addTodo')}
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors"
             onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
           />
@@ -133,11 +152,11 @@ export default function DashboardPage() {
               onChange={(e) => setCategory(e.target.value as any)}
               className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 dark:text-white focus:outline-none transition-colors"
             >
-              <option value="Хувийн">🏠 Хувийн</option>
-              <option value="Ажил">💼 Ажил</option>
-              <option value="Хичээл">📚 Хичээл</option>
+              <option value="Хувийн">🏠 {t('dashboard.personal')}</option>
+              <option value="Ажил">💼 {t('dashboard.work')}</option>
+              <option value="Хичээл">📚 {t('dashboard.study')}</option>
             </select>
-            <Button onClick={handleAdd}>Нэмэх</Button>
+            <Button onClick={handleAdd}>{t('dashboard.add')}</Button>
           </div>
         </div>
 
@@ -145,7 +164,7 @@ export default function DashboardPage() {
           <SearchBar
             value={search}
             onChange={handleSearchChange}
-            placeholder="Даалгавар хайх..."
+            placeholder={t('dashboard.search')}
           />
         </div>
 
@@ -170,8 +189,8 @@ export default function DashboardPage() {
         ) : data?.todos.length === 0 ? (
           <p className="text-center py-8 text-gray-500 dark:text-gray-400">
             {search
-              ? 'Хайлтад тохирох todo олдсонгүй'
-              : 'Todo байхгүй. Нэмээрэй!'}
+              ? t('dashboard.noResults')
+              : t('dashboard.noTodos')}
           </p>
         ) : (
           <ul className="space-y-2">
