@@ -6,8 +6,26 @@ import { todoQuerySchema } from '@taskhub/shared';
 export const list = asyncHandler(async (req: Request, res: Response) => {
   const userId = req.userId!;
 
-  // Zod-оор query параметрүүдийг validate хийх
-  const query = todoQuerySchema.parse(req.query);
+  // 1. req.query-г хуулбарлаж авах
+  const rawQuery: Record<string, any> = { ...req.query };
+
+  // 2. Монгол үсэг болон тусгай тэмдэгтүүдийг гараар decode хийх
+  if (typeof rawQuery.category === 'string') {
+    try {
+      rawQuery.category = decodeURIComponent(rawQuery.category);
+    } catch (e) {
+      // Хэрэв decode хийхэд алдаа гарвал хуучнаар нь үлдээх
+    }
+  }
+
+  if (typeof rawQuery.search === 'string') {
+    try {
+      rawQuery.search = decodeURIComponent(rawQuery.search);
+    } catch (e) {}
+  }
+
+  // 3. Zod-оор query параметрүүдийг validate хийх
+  const query = todoQuerySchema.parse(rawQuery);
 
   const result = await todoService.list(userId, query);
   res.json({ success: true, ...result });
