@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { BrowserRouter } from 'react-router-dom';
@@ -6,6 +6,36 @@ import { configureStore } from '@reduxjs/toolkit';
 import authReducer from '../src/features/auth/authSlice';
 import notificationReducer from '../src/features/notification/notificationSlice';
 import { ThemeProvider } from '../src/contexts/ThemeContext';
+
+// ===== i18n-ийг mock хийх =====
+// Тест дээр useTranslation нь үргэлж монгол текст буцаана
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => {
+      const translations: Record<string, string> = {
+        'dashboard.welcome': 'Сайн уу',
+        'dashboard.total': 'Нийт',
+        'dashboard.completed': 'Дууссан',
+        'dashboard.pending': 'Хүлээгдэж буй',
+        'dashboard.addTodo': 'Юу хийх вэ...',
+        'dashboard.add': 'Нэмэх',
+        'dashboard.search': 'Даалгавар хайх...',
+        'dashboard.all': 'Бүгд',
+        'dashboard.personal': 'Хувийн',
+        'dashboard.work': 'Ажил',
+        'dashboard.study': 'Хичээл',
+        'dashboard.noTodos': 'Todo байхгүй. Нэмээрэй!',
+        'dashboard.noResults': 'Хайлтад тохирох todo олдсонгүй',
+        'dashboard.logout': 'Гарах',
+      };
+      return translations[key] || key;
+    },
+    i18n: {
+      language: 'mn',
+      changeLanguage: vi.fn(),
+    },
+  }),
+}));
 
 // ===== RTK Query hook-уудыг mock хийх =====
 const mockCreateTodo = vi.fn();
@@ -65,7 +95,7 @@ vi.mock('../src/features/notification/notificationApi', () => ({
   useDeleteNotificationMutation: vi.fn(() => [vi.fn()]),
 }));
 
-// Import-ыг mock-ийн дараа хийх ёстой
+// ===== Import-ыг mock-ийн дараа хийх ёстой =====
 import DashboardPage from '../src/pages/DashboardPage';
 
 // ===== Test helpers =====
@@ -90,10 +120,10 @@ function renderWithProviders({
         isAuthenticated: !!user,
       },
       notifications: {
-        notifications: [], // ⬅️ items биш notifications
+        notifications: [],
         unreadCount: 0,
       },
-    },
+    } as any,
   });
 
   return render(
