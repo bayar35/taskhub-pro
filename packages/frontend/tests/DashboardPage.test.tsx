@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { BrowserRouter } from 'react-router-dom';
@@ -108,23 +108,25 @@ const mockUser = {
 function renderWithProviders({
   user = mockUser,
 }: { user?: typeof mockUser | null } = {}) {
+  const preloadedState = {
+    auth: {
+      user: user as any,
+      accessToken: user ? 'mock-token' : null,
+      isAuthenticated: !!user,
+    },
+    notifications: {
+      notifications: [],
+      unreadCount: 0,
+    },
+  };
+
   const store = configureStore({
     reducer: {
       auth: authReducer,
       notifications: notificationReducer,
     },
-    preloadedState: {
-      auth: {
-        user: user as any,
-        accessToken: user ? 'mock-token' : null,
-        isAuthenticated: !!user,
-      },
-      notifications: {
-        notifications: [],
-        unreadCount: 0,
-      },
-    } as any,
-  });
+    preloadedState,
+  } as any); // ⬅️ as any-г configureStore-ийн аргумент дээр тавих
 
   return render(
     <Provider store={store}>
