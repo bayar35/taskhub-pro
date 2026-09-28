@@ -90,9 +90,8 @@ function renderWithProviders({
         isAuthenticated: !!user,
       },
       notifications: {
-        items: [],
+        notifications: [], // ⬅️ items биш notifications
         unreadCount: 0,
-        loading: false,
       },
     },
   });
