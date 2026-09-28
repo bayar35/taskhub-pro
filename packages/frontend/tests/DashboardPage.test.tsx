@@ -4,7 +4,8 @@ import { Provider } from 'react-redux';
 import { BrowserRouter } from 'react-router-dom';
 import { configureStore } from '@reduxjs/toolkit';
 import authReducer from '../src/features/auth/authSlice';
-import { ThemeProvider } from '../src/contexts/ThemeContext'; // ⬅️ НЭМЭХ
+import notificationReducer from '../src/features/notification/notificationSlice';
+import { ThemeProvider } from '../src/contexts/ThemeContext';
 
 // ===== RTK Query hook-уудыг mock хийх =====
 const mockCreateTodo = vi.fn();
@@ -54,6 +55,16 @@ vi.mock('../src/features/auth/authApi', () => ({
   useLogoutMutation: vi.fn(() => [mockLogoutApi]),
 }));
 
+vi.mock('../src/features/notification/notificationApi', () => ({
+  useGetNotificationsQuery: vi.fn(() => ({
+    data: { notifications: [], unreadCount: 0 },
+    isLoading: false,
+  })),
+  useMarkNotificationReadMutation: vi.fn(() => [vi.fn()]),
+  useMarkAllNotificationsReadMutation: vi.fn(() => [vi.fn()]),
+  useDeleteNotificationMutation: vi.fn(() => [vi.fn()]),
+}));
+
 // Import-ыг mock-ийн дараа хийх ёстой
 import DashboardPage from '../src/pages/DashboardPage';
 
@@ -70,6 +81,7 @@ function renderWithProviders({
   const store = configureStore({
     reducer: {
       auth: authReducer,
+      notifications: notificationReducer,
     },
     preloadedState: {
       auth: {
@@ -77,15 +89,20 @@ function renderWithProviders({
         accessToken: user ? 'mock-token' : null,
         isAuthenticated: !!user,
       },
+      notifications: {
+        items: [],
+        unreadCount: 0,
+        loading: false,
+      },
     },
   });
 
   return render(
     <Provider store={store}>
       <BrowserRouter>
-        <ThemeProvider>          {/* ⬅️ НЭМЭХ */}
+        <ThemeProvider>
           <DashboardPage />
-        </ThemeProvider>         {/* ⬅️ НЭМЭХ */}
+        </ThemeProvider>
       </BrowserRouter>
     </Provider>
   );

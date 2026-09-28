@@ -6,7 +6,6 @@ import type {
 } from '@reduxjs/toolkit/query/react';
 import { API_URL } from '../lib/api';
 import { setAccessToken, logout } from '../features/auth/authSlice';
-tagTypes: ['Todo', 'Notification'],
 
 const baseQuery = fetchBaseQuery({
   baseUrl: `${API_URL}/api/v1`,
@@ -51,6 +50,6 @@ const baseQueryWithReauth: BaseQueryFn<
 export const api = createApi({
   reducerPath: 'api',
   baseQuery: baseQueryWithReauth,
-  tagTypes: ['Todo', 'User'],
+  tagTypes: ['Todo', 'User', 'Notification'],   // ⬅️ ЗӨВ БАЙРЛАЛ
   endpoints: () => ({}),
 });

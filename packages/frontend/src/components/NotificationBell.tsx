@@ -16,6 +16,7 @@ import {
 export function NotificationBell() {
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const hasInitialized = useRef(false);  // ⬅️ НЭМЭХ
 
   const dispatch = useAppDispatch();
   const { items, unreadCount } = useAppSelector((s) => s.notifications);
@@ -25,9 +26,11 @@ export function NotificationBell() {
   const [markAllRead] = useMarkAllNotificationsReadMutation();
   const [deleteNotification] = useDeleteNotificationMutation();
 
+  // ⬇️ ЗАССАН: зөвхөн нэг удаа setNotifications дуудах
   useEffect(() => {
-    if (data) {
+    if (data && !hasInitialized.current) {
       dispatch(setNotifications(data.notifications));
+      hasInitialized.current = true;
     }
   }, [data, dispatch]);
 
