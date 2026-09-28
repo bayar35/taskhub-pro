@@ -18,10 +18,10 @@
 - 🏷️ **Categories & Priorities** — Personal, Work, Study categories with priority levels
 - 🔍 **Search** — Debounced search by text and category
 - 🌗 **Dark Mode** — Light/dark theme with system preference detection
+- 🔔 **Real-time Notifications** — Socket.io push notifications
 - 📊 **Statistics** — Real-time total / completed / pending counts
 - 🎨 **Modern UI** — TailwindCSS, responsive design, smooth animations
-- 🔄 **Real-time Updates** — Socket.io for live sync across clients
-- 🧪 **Comprehensive Testing** — 111 tests across unit, integration, and E2E
+- 🧪 **Comprehensive Testing** — 116 tests across unit, integration, and E2E
 - 🚀 **CI/CD** — GitHub Actions pipeline with caching and coverage reporting
 - ☁️ **Auto Deploy** — Vercel deployment on every push to `main`
 
@@ -63,41 +63,39 @@
 - **MongoDB Atlas** (CI test database)
 - **Docker** (optional, for local dev)
 
----
-
 ## 📦 Project Structure
+
+```
 taskhub-pro/
 ├── packages/
-│ ├── frontend/ # React app (Vite + TypeScript)
-│ │ ├── src/
-│ │ │ ├── app/ # Redux store, hooks, API
-│ │ │ ├── components/ # Reusable UI components (Button, SearchBar, ThemeToggle)
-│ │ │ ├── contexts/ # React Context (ThemeContext)
-│ │ │ ├── features/ # Feature slices (auth, todo)
-│ │ │ ├── hooks/ # Custom hooks (useDebounce)
-│ │ │ ├── pages/ # Route pages
-│ │ │ ├── routes/ # Route guards
-│ │ │ └── lib/ # Utilities (API, socket, cn)
-│ │ ├── tests/ # Unit & component tests (70)
-│ │ └── e2e/ # Playwright E2E tests (10)
-│ │
-│ ├── backend/ # Express API
-│ │ ├── src/
-│ │ │ ├── config/ # Env validation
-│ │ │ ├── models/ # Mongoose schemas (User, Todo, RefreshToken)
-│ │ │ ├── modules/ # Feature modules (auth, todo)
-│ │ │ ├── middleware/ # Auth, validation, error
-│ │ │ └── app.ts # Express app setup
-│ │ └── tests/ # Integration tests (31)
-│ │
-│ └── shared/ # Shared TypeScript types & Zod schemas
+│   ├── frontend/              # React app (Vite + TypeScript)
+│   │   ├── src/
+│   │   │   ├── app/          # Redux store, hooks, API
+│   │   │   ├── components/   # Reusable UI (Button, SearchBar, ThemeToggle, NotificationBell)
+│   │   │   ├── contexts/     # React Context (ThemeContext)
+│   │   │   ├── features/     # Feature slices (auth, todo, notification)
+│   │   │   ├── hooks/        # Custom hooks (useDebounce)
+│   │   │   ├── pages/        # Route pages
+│   │   │   ├── routes/       # Route guards
+│   │   │   └── lib/          # Utilities (API, socket, cn)
+│   │   ├── tests/            # Unit & component tests (70)
+│   │   └── e2e/              # Playwright E2E tests (10)
+│   │
+│   ├── backend/               # Express API
+│   │   ├── src/
+│   │   │   ├── config/       # Env validation
+│   │   │   ├── models/       # Mongoose schemas (User, Todo, RefreshToken, Notification)
+│   │   │   ├── modules/      # Feature modules (auth, todo, notification)
+│   │   │   ├── middleware/   # Auth, validation, error
+│   │   │   └── app.ts        # Express app setup
+│   │   └── tests/            # Integration tests (36)
+│   │
+│   └── shared/                # Shared TypeScript types & Zod schemas
 │
-├── .github/workflows/ # CI/CD pipelines
-└── package.json # Root workspace config
+├── .github/workflows/         # CI/CD pipelines
+└── package.json               # Root workspace config
 
-text
-
----
+```
 
 ## 🚀 Getting Started
 
@@ -142,10 +140,10 @@ npm run dev
 # Frontend: http://localhost:5173
 # Backend:  http://localhost:5000
 🧪 Testing
-This project has 111 tests across three levels:
+This project has 116 tests across three levels:
 
 Level	Tests	Tool	Command
-Unit/Integration (backend)	31	Vitest + Supertest	npm run test --workspace=packages/backend
+Unit/Integration (backend)	36	Vitest + Supertest	npm run test --workspace=packages/backend
 Unit/Component (frontend)	70	Vitest + Testing Library	npm run test --workspace=packages/frontend
 E2E (full-stack)	10	Playwright	npm run test:e2e --workspace=packages/frontend
 Run all tests
@@ -199,7 +197,7 @@ Install dependencies (with cache)
 
 Build shared package
 
-Run backend tests with coverage (31)
+Run backend tests with coverage (36)
 
 Run frontend tests with coverage (70)
 
@@ -211,7 +209,7 @@ Upload backend coverage to Codecov
 
 Upload frontend coverage to Codecov
 
-Total runtime: ~3-4 minutes
+Total runtime: ~5 minutes
 
 View pipeline: Actions
 
@@ -234,6 +232,16 @@ POST	/api/v1/todos	Create todo
 PATCH	/api/v1/todos/:id	Update todo
 PUT	/api/v1/todos/:id/toggle	Toggle completed
 DELETE	/api/v1/todos/:id	Delete todo
+Notifications
+Method	Endpoint	Description
+GET	/api/v1/notifications	Get all notifications (unread count)
+PATCH	/api/v1/notifications/:id/read	Mark notification as read
+PATCH	/api/v1/notifications/read-all	Mark all notifications as read
+DELETE	/api/v1/notifications/:id	Delete notification
+Real-time events (Socket.io):
+
+notification:new — emitted when a new notification is created
+
 🏗 Architecture Decisions
 Why Monorepo?
 Shared types between frontend & backend (@taskhub/shared)
@@ -255,6 +263,13 @@ XSS-safe — JavaScript cannot access the token
 CSRF-mitigated — sameSite: strict cookie option
 
 Rotatable — token stored in DB, can be revoked on logout
+
+Why Socket.io for Notifications?
+Real-time — no polling needed
+
+Room-based — user-specific notifications (user:${userId})
+
+Reconnection — auto-retry on connection drop
 
 Why MongoDB Atlas for CI?
 Reliable — no local DB setup needed
@@ -278,13 +293,14 @@ Better DX — auto-wait, trace viewer
 ☑ Refresh token rotation
 ☑ Search & filter
 ☑ Dark mode
-☑ 111 tests (unit + integration + E2E)
+☑ Push notifications (Socket.io)
+☑ 116 tests (unit + integration + E2E)
 ☑ CI/CD pipeline
 ☑ Auto-deploy to Vercel
 ☑ Codecov coverage reporting
-□ Push notifications
+□ Email notifications
+□ Multi-language (i18n)
 □ Mobile app (React Native)
-□ Multi-language support (i18n)
 🤝 Contributing
 This is a personal portfolio project, but suggestions are welcome.
 
