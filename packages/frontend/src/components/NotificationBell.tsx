@@ -12,23 +12,27 @@ import {
   markAllAsRead,
   removeNotification,
 } from '../features/notification/notificationSlice';
+import type { AppNotification } from '../features/notification/notificationSlice';
 
 export function NotificationBell() {
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const hasInitialized = useRef(false);  // ⬅️ НЭМЭХ
+  const hasInitialized = useRef(false);
 
   const dispatch = useAppDispatch();
-  const { items, unreadCount } = useAppSelector((s) => s.notifications);
+  // ⬇️ ЗАССАН: items биш notifications гэж авна
+  const { notifications, unreadCount } = useAppSelector(
+    (s) => s.notifications
+  );
 
   const { data } = useGetNotificationsQuery({});
   const [markRead] = useMarkNotificationReadMutation();
   const [markAllRead] = useMarkAllNotificationsReadMutation();
   const [deleteNotification] = useDeleteNotificationMutation();
 
-  // ⬇️ ЗАССАН: зөвхөн нэг удаа setNotifications дуудах
+  // Зөвхөн нэг удаа setNotifications дуудах
   useEffect(() => {
-    if (data && !hasInitialized.current) {
+    if (data?.notifications && !hasInitialized.current) {
       dispatch(setNotifications(data.notifications));
       hasInitialized.current = true;
     }
@@ -37,7 +41,10 @@ export function NotificationBell() {
   // Гадна дарахад хаах
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target as Node)
+      ) {
         setOpen(false);
       }
     };
@@ -90,13 +97,14 @@ export function NotificationBell() {
             )}
           </div>
 
-          {items.length === 0 ? (
+          {/* ⬇️ ЗАССАН: items биш notifications */}
+          {!notifications || notifications.length === 0 ? (
             <p className="text-center text-gray-500 dark:text-gray-400 py-8 text-sm">
               Мэдэгдэл байхгүй
             </p>
           ) : (
             <ul className="divide-y divide-gray-200 dark:divide-gray-700">
-              {items.slice(0, 10).map((n) => (
+              {notifications.slice(0, 10).map((n: AppNotification) => (
                 <li
                   key={n._id}
                   className={`p-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition ${
