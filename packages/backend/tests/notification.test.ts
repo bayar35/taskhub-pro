@@ -1,24 +1,44 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import {
+  describe,
+  it,
+  expect,
+  beforeAll,
+  afterAll,
+  beforeEach,
+} from 'vitest';
 import request from 'supertest';
-import app from '../src/app';
+import { app } from '../src/app';
+import { connectTestDB, disconnectTestDB, clearTestDB } from './setup';
 
-describe('Notification API', () => {
-  let accessToken: string;
+let accessToken: string;
 
-  beforeEach(async () => {
-    await request(app)
-      .post('/api/v1/auth/register')
-      .send({ username: 'notifuser', password: 'Test123!@#' });
+beforeAll(async () => {
+  await connectTestDB();
+}, 60000);
 
-    const login = await request(app)
-      .post('/api/v1/auth/login')
-      .send({ username: 'notifuser', password: 'Test123!@#' });
+afterAll(async () => {
+  await disconnectTestDB();
+}, 30000);
 
-    accessToken = login.body.data.accessToken;
+beforeEach(async () => {
+  await clearTestDB();
+
+  await request(app).post('/api/v1/auth/register').send({
+    username: 'notifuser',
+    email: 'notifuser@test.com',
+    password: 'Test123!@#',
   });
 
-  const auth = () => ({ Authorization: `Bearer ${accessToken}` });
+  const login = await request(app)
+    .post('/api/v1/auth/login')
+    .send({ username: 'notifuser', password: 'Test123!@#' });
 
+  accessToken = login.body.data.accessToken;
+});
+
+const auth = () => ({ Authorization: `Bearer ${accessToken}` });
+
+describe('Notification API', () => {
   it('1. should return empty list for new user', async () => {
     const res = await request(app).get('/api/v1/notifications').set(auth());
 
@@ -62,8 +82,14 @@ describe('Notification API', () => {
   });
 
   it('4. should mark all as read', async () => {
-    await request(app).post('/api/v1/todos').set(auth()).send({ text: 'Todo 1' });
-    await request(app).post('/api/v1/todos').set(auth()).send({ text: 'Todo 2' });
+    await request(app)
+      .post('/api/v1/todos')
+      .set(auth())
+      .send({ text: 'Todo 1' });
+    await request(app)
+      .post('/api/v1/todos')
+      .set(auth())
+      .send({ text: 'Todo 2' });
 
     const res = await request(app)
       .patch('/api/v1/notifications/read-all')
@@ -76,7 +102,10 @@ describe('Notification API', () => {
   });
 
   it('5. should delete notification', async () => {
-    await request(app).post('/api/v1/todos').set(auth()).send({ text: 'Test' });
+    await request(app)
+      .post('/api/v1/todos')
+      .set(auth())
+      .send({ text: 'Test' });
 
     const list = await request(app).get('/api/v1/notifications').set(auth());
     const id = list.body.data.notifications[0]._id;

@@ -34,6 +34,32 @@ export const authApi = api.injectEndpoints({
       invalidatesTags: ['User'],
     }),
 
+    setupTwoFactor: builder.mutation<{ data: { secret: string; qrCode: string } }, void>({
+  query: () => ({
+    url: '/auth/2fa/setup',
+    method: 'POST',
+  }),
+  invalidatesTags: ['User'],
+}),
+
+verifyTwoFactor: builder.mutation<{ data: { backupCodes: string[] } }, { token: string }>({
+  query: (data) => ({
+    url: '/auth/2fa/verify',
+    method: 'POST',
+    body: data,
+  }),
+  invalidatesTags: ['User'],
+}),
+
+disableTwoFactor: builder.mutation<{ success: boolean }, { token: string }>({
+  query: (data) => ({
+    url: '/auth/2fa/disable',
+    method: 'POST',
+    body: data,
+  }),
+  invalidatesTags: ['User'],
+}),
+
     getMe: builder.query<{ data: IUser }, void>({
       query: () => '/auth/me',
       providesTags: ['User'],
@@ -46,4 +72,7 @@ export const {
   useRegisterMutation,
   useLogoutMutation,
   useGetMeQuery,
+  useSetupTwoFactorMutation,
+  useVerifyTwoFactorMutation,
+  useDisableTwoFactorMutation,
 } = authApi;

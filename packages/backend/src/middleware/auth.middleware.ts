@@ -1,30 +1,37 @@
 import { Request, Response, NextFunction } from 'express';
-import { verifyAccessToken, JwtPayload } from '../utils/jwt';
+import { verifyAccessToken } from '../utils/jwt';
+import { ApiError } from '../utils/ApiError';
+import { User } from '../models/User.model';
 
-declare global {
-  namespace Express {
-    interface Request {
-      user?: JwtPayload;
-      userId?: string;  // ⬅️ НЭМЭХ
-    }
-  }
-}
-
-export function authenticate(req: Request, res: Response, next: NextFunction) {
-  const header = req.headers.authorization;
-  if (!header?.startsWith('Bearer ')) {
-    return res.status(401).json({ message: 'Token байхгүй' });
-  }
-
-  const token = header.slice(7);
+export const authenticate = async (
+  req: Request,
+  _res: Response,
+  next: NextFunction
+) => {
   try {
-    const payload = verifyAccessToken(token);
-    req.user = payload;
-    req.userId = payload.userId;  // ⬅️ НЭМЭХ
-    next();
-  } catch {
-    return res.status(401).json({ message: 'Token хүчингүй эсвэл хугацаа дууссан' });
-  }
-}
+    const authHeader = req.headers.authorization;
+    if (!authHeader?.startsWith('Bearer ')) {
+      throw ApiError.unauthorized('Нэвтрэх шаардлагатай');
+    }
 
-export const requireAuth = authenticate;
+    const token = authHeader.split(' ')[1];
+    const payload = verifyAccessToken(token);
+
+    // DB-с User-ийг бүрэн авах (organizationId-тай хамт)
+    const user = await User.findById(payload.userId);
+    if (!user) {
+      throw ApiError.unauthorized('Хэрэглэгч олдсонгүй');
+    }
+
+    req.userId = user._id.toString();
+    req.organizationId = user.organizationId?.toString() || '';
+    req.userRole = user.role;
+
+    next();
+  } catch (error) {
+    next(ApiError.unauthorized('Хүчингүй token'));
+  }
+};
+
+// Backward compatibility
+export const authMiddleware = authenticate;

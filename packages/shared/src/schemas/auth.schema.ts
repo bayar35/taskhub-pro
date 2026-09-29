@@ -3,22 +3,20 @@ import { z } from 'zod';
 export const registerSchema = z.object({
   username: z
     .string()
-    .min(3, 'Хэрэглэгчийн нэр дор хаяж 3 тэмдэгт')
-    .max(30, 'Хэрэглэгчийн нэр 30 тэмдэгтээс бага')
-    .regex(/^[a-zA-Z0-9_]+$/, 'Зөвхөн үсэг, тоо, _ агуулна'),
-  email: z.string().email('Имэйл хаяг буруу').optional().or(z.literal('')),
+    .min(3, 'Хэрэглэгчийн нэр 3+ тэмдэгт байх ёстой')
+    .max(50, '50 тэмдэгтээс бага')
+    .trim(),
+  email: z.string().email('Зөв и-мэйл оруулна уу').optional(),
   password: z
     .string()
-    .min(8, 'Нууц үг дор хаяж 8 тэмдэгт')
-    .regex(/[A-Z]/, 'Дор хаяж нэг том үсэг')
-    .regex(/[a-z]/, 'Дор хаяж нэг жижиг үсэг')
-    .regex(/[0-9]/, 'Дор хаяж нэг тоо')
-    .regex(/[^A-Za-z0-9]/, 'Дор хаяж нэг тусгай тэмдэгт'),
+    .min(8, 'Нууц үг 8+ тэмдэгт байх ёстой')
+    .max(100, '100 тэмдэгтээс бага'),
 });
 
 export const loginSchema = z.object({
   username: z.string().min(1, 'Хэрэглэгчийн нэр шаардлагатай'),
   password: z.string().min(1, 'Нууц үг шаардлагатай'),
+  twoFactorToken: z.string().optional(),
 });
 
 export type RegisterInput = z.infer<typeof registerSchema>;

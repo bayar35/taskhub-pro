@@ -1,8 +1,8 @@
-import { User, IUserDoc } from '../../models/User.model';
+import { User, type IUserDoc } from '../../models/User.model';
 
 export class AuthRepository {
   async findByUsername(username: string): Promise<IUserDoc | null> {
-    return User.findOne({ username }).select('+password');
+    return User.findOne({ username }).select('+password') as Promise<IUserDoc | null>;
   }
 
   async findById(id: string): Promise<IUserDoc | null> {

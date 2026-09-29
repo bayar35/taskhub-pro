@@ -50,6 +50,6 @@ const baseQueryWithReauth: BaseQueryFn<
 export const api = createApi({
   reducerPath: 'api',
   baseQuery: baseQueryWithReauth,
-  tagTypes: ['Todo', 'User', 'Notification'],   // ⬅️ ЗӨВ БАЙРЛАЛ
+  tagTypes: ['Todo', 'User', 'Notification', 'File', 'Recurring'],
   endpoints: () => ({}),
 });

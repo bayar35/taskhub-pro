@@ -1,10 +1,10 @@
-import Notification, { INotificationDoc } from '../../models/Notification.model';
+import { Notification, type INotification } from '../../models/Notification.model';
 
 export class NotificationRepository {
   async findByUser(
     userId: string,
     options: { unreadOnly?: boolean; limit?: number } = {}
-  ): Promise<INotificationDoc[]> {
+  ): Promise<INotification[]> {
     const filter: Record<string, any> = { userId };
     if (options.unreadOnly) {
       filter.read = false;
@@ -19,14 +19,14 @@ export class NotificationRepository {
     return Notification.countDocuments({ userId, read: false });
   }
 
-  async create(data: Partial<INotificationDoc>): Promise<INotificationDoc> {
+  async create(data: Partial<INotification>): Promise<INotification> {
     return Notification.create(data);
   }
 
   async markAsRead(
     id: string,
     userId: string
-  ): Promise<INotificationDoc | null> {
+  ): Promise<INotification | null> {
     return Notification.findOneAndUpdate(
       { _id: id, userId },
       { read: true },
@@ -38,7 +38,7 @@ export class NotificationRepository {
     await Notification.updateMany({ userId, read: false }, { read: true });
   }
 
-  async delete(id: string, userId: string): Promise<INotificationDoc | null> {
+  async delete(id: string, userId: string): Promise<INotification | null> {
     return Notification.findOneAndDelete({ _id: id, userId });
   }
 }

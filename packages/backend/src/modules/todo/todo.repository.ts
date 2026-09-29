@@ -1,54 +1,31 @@
-import { Todo, ITodoDoc } from '../../models/Todo.model';
-import type { ITodoFilters } from '@taskhub/shared';
+import { Todo } from '../../models/Todo.model';
 
-interface FindOptions {
-  userId: string;
-  filters: ITodoFilters;
-  sort?: string;
-  page?: number;
-  limit?: number;
-}
+class TodoRepository {
+  async findAll(params: {
+    organizationId: string;  // ⬅️ Гол өөрчлөлт
+    userId?: string;
+    filters?: any;
+    sort?: string;
+    page?: number;
+    limit?: number;
+  }) {
+    const { organizationId, userId, filters = {}, sort = '-createdAt', page = 1, limit = 20 } = params;
 
-export class TodoRepository {
-  async findAll({
-    userId,
-    filters,
-    sort = '-createdAt',
-    page = 1,
-    limit = 50,
-  }: FindOptions) {
-    const query: any = { userId };
+    const query: any = { organizationId };
+    
+    // Зөвхөн тухайн хэрэглэгчийн todo-г харах (optional)
+    if (userId) query.userId = userId;
 
-    if (filters.category && filters.category !== 'Бүгд') {
-      query.category = filters.category;
+    if (filters.search) {
+      query.text = { $regex: filters.search, $options: 'i' };
     }
-
-    if (filters.completed !== undefined) {
-      query.completed = filters.completed;
-    }
-
-    if (filters.priority) {
-      query.priority = filters.priority;
-    }
-
-    // ⬇️ SEARCH — text болон category-аар case-insensitive хайх
-    if (filters.search && filters.search.trim()) {
-      const searchRegex = new RegExp(filters.search.trim(), 'i');
-      query.$or = [{ text: searchRegex }, { category: searchRegex }];
-    }
-
-    // ⬇️ Sort
-    const sortObj: Record<string, 1 | -1> = {};
-    if (sort.startsWith('-')) {
-      sortObj[sort.slice(1)] = -1;
-    } else {
-      sortObj[sort] = 1;
-    }
+    if (filters.category) query.category = filters.category;
+    if (filters.priority) query.priority = filters.priority;
+    if (filters.completed !== undefined) query.completed = filters.completed;
 
     const skip = (page - 1) * limit;
-
     const [todos, total] = await Promise.all([
-      Todo.find(query).sort(sortObj).skip(skip).limit(limit).lean(),
+      Todo.find(query).sort(sort).skip(skip).limit(limit).lean(),
       Todo.countDocuments(query),
     ]);
 
@@ -63,52 +40,37 @@ export class TodoRepository {
     };
   }
 
-  async findById(id: string, userId: string): Promise<ITodoDoc | null> {
-    return Todo.findOne({ _id: id, userId });
-  }
-
-  async create(data: Partial<ITodoDoc>): Promise<ITodoDoc> {
+  async create(data: any) {
     return Todo.create(data);
   }
 
-  async update(
-    id: string,
-    userId: string,
-    data: Partial<ITodoDoc>
-  ): Promise<ITodoDoc | null> {
-    return Todo.findOneAndUpdate({ _id: id, userId }, data, {
-      new: true,
-      runValidators: true,
-    });
+  async findById(id: string, organizationId: string) {
+    return Todo.findOne({ _id: id, organizationId });
   }
 
-  async delete(id: string, userId: string): Promise<ITodoDoc | null> {
-    return Todo.findOneAndDelete({ _id: id, userId });
+  async update(id: string, organizationId: string, data: any) {
+    return Todo.findOneAndUpdate(
+      { _id: id, organizationId },
+      data,
+      { new: true }
+    );
   }
 
-  async getStats(userId: string) {
-    const stats = await Todo.aggregate([
-      { $match: { userId: new (require('mongoose').Types.ObjectId)(userId) } },
-      {
-        $group: {
-          _id: null,
-          total: { $sum: 1 },
-          completed: {
-            $sum: { $cond: ['$completed', 1, 0] },
-          },
-        },
-      },
+  async delete(id: string, organizationId: string) {
+    return Todo.findOneAndDelete({ _id: id, organizationId });
+  }
+
+  async getStats(organizationId: string, userId?: string) {
+    const query: any = { organizationId };
+    if (userId) query.userId = userId;
+
+    const [total, completed, pending] = await Promise.all([
+      Todo.countDocuments(query),
+      Todo.countDocuments({ ...query, completed: true }),
+      Todo.countDocuments({ ...query, completed: false }),
     ]);
 
-    if (stats.length === 0) {
-      return { total: 0, completed: 0, pending: 0 };
-    }
-
-    return {
-      total: stats[0].total,
-      completed: stats[0].completed,
-      pending: stats[0].total - stats[0].completed,
-    };
+    return { total, completed, pending };
   }
 }
 

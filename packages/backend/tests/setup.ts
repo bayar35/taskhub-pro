@@ -1,28 +1,49 @@
-import { beforeAll, afterAll, afterEach } from 'vitest';
 import mongoose from 'mongoose';
+import dotenv from 'dotenv';
 
-beforeAll(async () => {
-  const uri = process.env.MONGO_URI;
+// .env.test файлыг уншина
+dotenv.config({ path: '.env.test' });
 
-  if (!uri) {
-    throw new Error('MONGO_URI тохируулаагүй байна');
+let isConnected = false;
+
+export async function connectTestDB() {
+  if (isConnected && mongoose.connection.readyState === 1) {
+    return;
   }
 
-  await mongoose.connect(uri);
-  console.log('✅ Test MongoDB (Atlas) холбогдлоо');
-}, 60000);
+  const uri = process.env.MONGO_URI;
+  if (!uri) {
+    throw new Error('MONGO_URI тохируулаагүй байна (.env.test)');
+  }
 
-afterEach(async () => {
-  if (mongoose.connection.readyState !== 1) return;
+  await mongoose.connect(uri, {
+    serverSelectionTimeoutMS: 30000,
+    socketTimeoutMS: 45000,
+  });
+
+  isConnected = true;
+  console.log('✅ Test MongoDB (Atlas) холбогдлоо');
+}
+
+export async function disconnectTestDB() {
+  try {
+    if (mongoose.connection.readyState !== 0) {
+      await mongoose.disconnect();
+    }
+    isConnected = false;
+    console.log('🔌 Test MongoDB салсан');
+  } catch (error) {
+    console.error('MongoDB disconnect error:', error);
+  }
+}
+
+export async function clearTestDB() {
   const collections = mongoose.connection.collections;
   for (const key in collections) {
-    await collections[key].deleteMany({});
+    try {
+      await collections[key].deleteMany({});
+    } catch {
+      // Collection хоосон бол алгасах
+    }
   }
-});
-
-afterAll(async () => {
-  if (mongoose.connection.readyState === 1) {
-    await mongoose.disconnect();
-  }
-  console.log('🔌 Test MongoDB салсан');
-});
+}

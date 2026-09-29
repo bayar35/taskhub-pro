@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { authService } from './auth.service';
 import { asyncHandler } from '../../utils/asyncHandler';
 import { env } from '../../config/env';
+import { twoFactorService } from './twoFactor.service';
 
 const COOKIE_OPTIONS = {
   httpOnly: true,
@@ -83,3 +84,23 @@ export const me = asyncHandler(
     res.json({ success: true, data: user });
   }
 );
+
+export const setupTwoFactor = asyncHandler(async (req, res) => {
+  const userId = req.userId!;
+  const result = await twoFactorService.generateSecret(userId);
+  res.json({ success: true, data: result });
+});
+
+export const verifyTwoFactor = asyncHandler(async (req, res) => {
+  const userId = req.userId!;
+  const { token } = req.body;
+  const result = await twoFactorService.verifyAndEnable(userId, token);
+  res.json({ success: true, data: result });
+});
+
+export const disableTwoFactor = asyncHandler(async (req, res) => {
+  const userId = req.userId!;
+  const { token } = req.body;
+  await twoFactorService.disable(userId, token);
+  res.json({ success: true });
+});

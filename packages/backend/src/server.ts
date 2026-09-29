@@ -5,6 +5,10 @@ import { env } from './config/env';
 import { logger } from './config/logger';
 import { connectDB } from './config/db';
 import { initSocket } from './config/socket';
+import { recurringService } from './modules/recurring/recurring.service';
+
+// Server эхлэх үед
+recurringService.startCron();
 
 // ⬇️ cookieParser, authRoutes, app.use-ууд БҮГД app.ts руу шилжсэн
 // Тиймээс энд дахин бичих шаардлагагүй!

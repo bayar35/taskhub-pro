@@ -8,6 +8,7 @@ import {
   JwtPayload,
 } from '../utils/jwt';
 import { env } from '../config/env';
+import { comparePassword } from '../utils/password';
 
 const REFRESH_COOKIE = 'refreshToken';
 const REFRESH_MAX_AGE = 7 * 24 * 60 * 60 * 1000; // 7 хоног (ms)
@@ -18,7 +19,7 @@ export async function login(req: Request, res: Response) {
     const { email, password } = req.body;
 
     const user = await User.findOne({ email });
-    if (!user || !(await user.comparePassword(password))) {
+    if (!user || !(await comparePassword(password, user.password))) {
       return res.status(401).json({ message: 'Имэйл эсвэл нууц үг буруу' });
     }
 
@@ -50,7 +51,7 @@ export async function login(req: Request, res: Response) {
       user: {
         id: user._id,
         email: user.email,
-        name: user.name,
+        name: user.username,
         role: user.role,
       },
     });

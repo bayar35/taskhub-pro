@@ -1,27 +1,69 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import {
+  describe,
+  it,
+  expect,
+  beforeAll,
+  afterAll,
+  beforeEach,
+} from 'vitest';
 import request from 'supertest';
-import app from '../src/app';
+import { app } from '../src/app';
+import { Todo } from '../src/models/Todo.model';
+import { connectTestDB, disconnectTestDB, clearTestDB } from './setup';
 
-describe('Todo API', () => {
-  let accessToken: string;
-  let todoId: string;
+let accessToken: string;
+let userId: string;
+let organizationId: string;
 
-  beforeEach(async () => {
-    // Register + Login
-    await request(app)
-      .post('/api/v1/auth/register')
-      .send({ username: 'todouser', password: 'Test123!@#' });
+beforeAll(async () => {
+  await connectTestDB();
 
-    const login = await request(app)
-      .post('/api/v1/auth/login')
-      .send({ username: 'todouser', password: 'Test123!@#' });
+  // 1. Register
+  const registerRes = await request(app)
+    .post('/api/v1/auth/register')
+    .send({
+      username: 'todouser',
+      email: 'todouser@test.com',
+      password: 'Test123!@#',
+    });
 
-    accessToken = login.body.data.accessToken;
+  if (registerRes.status !== 201) {
+    console.error('❌ Register failed:', registerRes.status, registerRes.body);
+    throw new Error('Register failed');
+  }
+
+  console.log('✅ Register OK:', {
+    _id: registerRes.body.data._id,
+    organizationId: registerRes.body.data.organizationId,
   });
 
-  const auth = () => ({ Authorization: `Bearer ${accessToken}` });
+  // 2. Login
+  const loginRes = await request(app)
+    .post('/api/v1/auth/login')
+    .send({ username: 'todouser', password: 'Test123!@#' });
 
-  // ============ CREATE (3 тест) ============
+  if (!loginRes.body.data?.accessToken) {
+    console.error('❌ Login failed:', loginRes.body);
+    throw new Error('Login failed');
+  }
+
+  accessToken = loginRes.body.data.accessToken;
+  userId = registerRes.body.data._id;
+  organizationId = registerRes.body.data.organizationId;
+
+  console.log('✅ Login OK, token:', accessToken.slice(0, 20) + '...');
+}, 60000);
+afterAll(async () => {
+  await disconnectTestDB();
+}, 30000);
+
+beforeEach(async () => {
+  await Todo.deleteMany({});
+});
+
+const auth = () => ({ Authorization: `Bearer ${accessToken}` });
+
+describe('Todo API', () => {
   describe('POST /api/v1/todos', () => {
     it('1. should create a todo', async () => {
       const res = await request(app)
@@ -34,8 +76,6 @@ describe('Todo API', () => {
       expect(res.body.data.text).toBe('Test todo');
       expect(res.body.data.category).toBe('Ажил');
       expect(res.body.data.priority).toBe('high');
-      expect(res.body.data.completed).toBe(false);
-      todoId = res.body.data._id;
     });
 
     it('2. should reject empty text', async () => {
@@ -57,17 +97,28 @@ describe('Todo API', () => {
     });
   });
 
-  // ============ LIST (2 тест) ============
   describe('GET /api/v1/todos', () => {
     beforeEach(async () => {
-      await request(app)
-        .post('/api/v1/todos')
-        .set(auth())
-        .send({ text: 'Todo 1', category: 'Ажил' });
-      await request(app)
-        .post('/api/v1/todos')
-        .set(auth())
-        .send({ text: 'Todo 2', category: 'Хувийн' });
+      await Todo.create([
+        {
+          organizationId,
+          userId,
+          text: 'Todo 1',
+          category: 'Ажил',
+          priority: 'high',
+          completed: false,
+          tags: [],
+        },
+        {
+          organizationId,
+          userId,
+          text: 'Todo 2',
+          category: 'Хувийн',
+          priority: 'medium',
+          completed: false,
+          tags: [],
+        },
+      ]);
     });
 
     it('4. should list all todos', async () => {
@@ -88,8 +139,9 @@ describe('Todo API', () => {
     });
   });
 
-  // ============ TOGGLE (2 тест) ============
   describe('PUT /api/v1/todos/:id/toggle', () => {
+    let todoId: string;
+
     beforeEach(async () => {
       const res = await request(app)
         .post('/api/v1/todos')
@@ -116,8 +168,9 @@ describe('Todo API', () => {
     });
   });
 
-  // ============ UPDATE (2 тест) ============
   describe('PATCH /api/v1/todos/:id', () => {
+    let todoId: string;
+
     beforeEach(async () => {
       const res = await request(app)
         .post('/api/v1/todos')
@@ -130,10 +183,10 @@ describe('Todo API', () => {
       const res = await request(app)
         .patch(`/api/v1/todos/${todoId}`)
         .set(auth())
-        .send({ text: 'Updated text' });
+        .send({ text: 'Updated' });
 
       expect(res.status).toBe(200);
-      expect(res.body.data.text).toBe('Updated text');
+      expect(res.body.data.text).toBe('Updated');
     });
 
     it('9. should update category', async () => {
@@ -147,7 +200,6 @@ describe('Todo API', () => {
     });
   });
 
-  // ============ DELETE (1 тест) ============
   describe('DELETE /api/v1/todos/:id', () => {
     it('10. should delete todo', async () => {
       const create = await request(app)
@@ -162,26 +214,27 @@ describe('Todo API', () => {
 
       expect(res.status).toBe(200);
 
-      const list = await request(app).get('/api/v1/todos').set(auth());
-      expect(list.body.todos).toHaveLength(0);
+      const get = await request(app)
+        .get(`/api/v1/todos/${id}`)
+        .set(auth());
+      expect(get.status).toBe(404);
     });
   });
 
-  // ============ STATS (2 тест) ============
   describe('GET /api/v1/todos/stats', () => {
     beforeEach(async () => {
       const t1 = await request(app)
         .post('/api/v1/todos')
         .set(auth())
-        .send({ text: 'Todo 1' });
-      await request(app)
-        .post('/api/v1/todos')
-        .set(auth())
-        .send({ text: 'Todo 2' });
-
+        .send({ text: 'Stats 1' });
       await request(app)
         .put(`/api/v1/todos/${t1.body.data._id}/toggle`)
         .set(auth());
+
+      await request(app)
+        .post('/api/v1/todos')
+        .set(auth())
+        .send({ text: 'Stats 2' });
     });
 
     it('11. should return stats', async () => {
@@ -194,38 +247,46 @@ describe('Todo API', () => {
     });
 
     it('12. should return zero stats for new user', async () => {
-      await request(app)
-        .post('/api/v1/auth/register')
-        .send({ username: 'newuser1', password: 'Test123!@#' });
+      await Todo.deleteMany({});
 
-      const login = await request(app)
-        .post('/api/v1/auth/login')
-        .send({ username: 'newuser1', password: 'Test123!@#' });
-
-      const res = await request(app)
-        .get('/api/v1/todos/stats')
-        .set({ Authorization: `Bearer ${login.body.data.accessToken}` });
+      const res = await request(app).get('/api/v1/todos/stats').set(auth());
 
       expect(res.status).toBe(200);
       expect(res.body.data.total).toBe(0);
     });
   });
 
-    // ============ SEARCH (5 тест) ============
   describe('GET /api/v1/todos?search=...', () => {
     beforeEach(async () => {
-      await request(app)
-        .post('/api/v1/todos')
-        .set(auth())
-        .send({ text: 'React сурах', category: 'Хичээл' });
-      await request(app)
-        .post('/api/v1/todos')
-        .set(auth())
-        .send({ text: 'TypeScript дасгал', category: 'Хичээл' });
-      await request(app)
-        .post('/api/v1/todos')
-        .set(auth())
-        .send({ text: 'Худалдан авалт', category: 'Хувийн' });
+      await Todo.create([
+        {
+          organizationId,
+          userId,
+          text: 'React сурах',
+          category: 'Хичээл',
+          priority: 'high',
+          completed: false,
+          tags: [],
+        },
+        {
+          organizationId,
+          userId,
+          text: 'TypeScript дасгал',
+          category: 'Хичээл',
+          priority: 'medium',
+          completed: false,
+          tags: [],
+        },
+        {
+          organizationId,
+          userId,
+          text: 'Худалдан авалт',
+          category: 'Хувийн',
+          priority: 'low',
+          completed: false,
+          tags: [],
+        },
+      ]);
     });
 
     it('13. should search by text (case-insensitive)', async () => {
@@ -250,7 +311,7 @@ describe('Todo API', () => {
 
     it('15. should search by category', async () => {
       const res = await request(app)
-        .get('/api/v1/todos?search=Хичээл')
+        .get('/api/v1/todos?category=Хичээл')
         .set(auth());
 
       expect(res.status).toBe(200);

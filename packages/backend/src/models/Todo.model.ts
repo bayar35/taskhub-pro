@@ -1,11 +1,12 @@
-import mongoose, { Schema, Document } from 'mongoose';
-import type { TodoCategory, TodoPriority } from '@taskhub/shared';
+import mongoose, { Schema, Document, Types } from 'mongoose';
 
-export interface ITodoDoc extends Document {
-  userId: mongoose.Types.ObjectId;
+export interface ITodo extends Document {
+  _id: Types.ObjectId;
+  organizationId: Types.ObjectId;
+  userId: Types.ObjectId;
   text: string;
-  category: TodoCategory;
-  priority: TodoPriority;
+  category: string;
+  priority: 'low' | 'medium' | 'high';
   dueDate?: Date;
   completed: boolean;
   tags: string[];
@@ -13,49 +14,37 @@ export interface ITodoDoc extends Document {
   updatedAt: Date;
 }
 
-const TodoSchema = new Schema<ITodoDoc>(
+const TodoSchema = new Schema<ITodo>(
   {
+    organizationId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Organization',
+      required: true,
+      index: true,
+    },
     userId: {
       type: Schema.Types.ObjectId,
       ref: 'User',
       required: true,
       index: true,
     },
-    text: {
-      type: String,
-      required: true,
-      trim: true,
-      minlength: 1,
-      maxlength: 500,
-    },
-    category: {
-      type: String,
-      enum: ['Хувийн', 'Ажил', 'Хичээл'],
-      default: 'Хувийн',
-      index: true,
-    },
+    text: { type: String, required: true, trim: true, maxlength: 500 },
+    category: { type: String, required: true, default: 'Хувийн' },
     priority: {
       type: String,
       enum: ['low', 'medium', 'high'],
       default: 'medium',
     },
     dueDate: Date,
-    completed: {
-      type: Boolean,
-      default: false,
-      index: true,
-    },
-    tags: {
-      type: [String],
-      default: [],
-    },
+    completed: { type: Boolean, default: false },
+    tags: [{ type: String }],
   },
   { timestamps: true }
 );
 
-TodoSchema.index({ userId: 1, completed: 1, createdAt: -1 });
+TodoSchema.index({ organizationId: 1, completed: 1 });
+TodoSchema.index({ organizationId: 1, category: 1 });
 TodoSchema.index({ text: 'text' });
 
 export const Todo =
-  mongoose.models.Todo ||
-  mongoose.model<ITodoDoc>('Todo', TodoSchema);
+  mongoose.models.Todo || mongoose.model<ITodo>('Todo', TodoSchema);

@@ -62,4 +62,5 @@ app.use('/api/v1/notifications', notificationRoutes); // ⬅️ ЭНД БАЙХ 
 app.use(notFound);
 app.use(errorHandler);
 
+export { app };
 export default app;

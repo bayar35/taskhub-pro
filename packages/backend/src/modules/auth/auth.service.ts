@@ -6,6 +6,7 @@ import {
   type LoginInput,
 } from '@taskhub/shared';
 import { authRepository } from './auth.repository';
+import { User } from '../../models/User.model';
 import { hashPassword, comparePassword } from '../../utils/password';
 import {
   signAccessToken,
@@ -13,6 +14,9 @@ import {
   verifyRefreshToken,
 } from '../../utils/jwt';
 import { ApiError } from '../../utils/ApiError';
+import { twoFactorService } from './twoFactor.service';
+import { organizationService } from '../organization/organization.service';
+import { logger } from '../../config/logger';
 
 interface LoginResult {
   accessToken: string;
@@ -31,20 +35,43 @@ export class AuthService {
 
     const hashedPassword = await hashPassword(data.password);
 
+    // 1. Хэрэглэгч үүсгэх
     const user = await authRepository.create({
       username: data.username,
-      email: data.email || undefined,
+      email: data.email || `${data.username}@taskhub.local`,
       password: hashedPassword,
-      role: 'user',
+      role: 'owner',
     });
 
-    return this.toPublicUser(user);
+    // 2. Автомат organization үүсгэх
+    try {
+      await organizationService.create(
+        user._id.toString(),
+        `${data.username}-ийн байгууллага`
+      );
+    } catch (error: any) {
+      logger.error('❌ Organization үүсгэх алдаа:', error);
+      await User.findByIdAndDelete(user._id);
+      throw ApiError.internal(
+        `Байгууллага үүсгэхэд алдаа гарлаа: ${error.message}`
+      );
+    }
+
+    const updatedUser = await authRepository.findById(user._id.toString());
+    if (!updatedUser) {
+      throw ApiError.internal('Хэрэглэгч олдсонгүй');
+    }
+    return this.toPublicUser(updatedUser);
   }
 
-  async login(input: LoginInput): Promise<LoginResult> {
+  async login(
+    input: LoginInput & { twoFactorToken?: string }
+  ): Promise<LoginResult> {
     const data = loginSchema.parse(input);
 
-    const user = await authRepository.findByUsername(data.username);
+    const user = await User.findOne({ username: data.username }).select(
+      '+password +twoFactorSecret'
+    );
     if (!user) {
       throw ApiError.badRequest('Нэр эсвэл нууц үг буруу');
     }
@@ -52,6 +79,28 @@ export class AuthService {
     const isMatch = await comparePassword(data.password, user.password);
     if (!isMatch) {
       throw ApiError.badRequest('Нэр эсвэл нууц үг буруу');
+    }
+
+    // 2FA шалгах
+    if (user.twoFactorEnabled) {
+      if (!input.twoFactorToken) {
+        throw ApiError.unauthorized('2FA код шаардлагатай');
+      }
+
+      const validToken = await twoFactorService.verify(
+        user._id.toString(),
+        input.twoFactorToken
+      );
+
+      if (!validToken) {
+        const validBackup = await twoFactorService.verifyBackupCode(
+          user._id.toString(),
+          input.twoFactorToken
+        );
+        if (!validBackup) {
+          throw ApiError.unauthorized('2FA код буруу');
+        }
+      }
     }
 
     const payload = {
@@ -63,6 +112,9 @@ export class AuthService {
     const refreshToken = signRefreshToken(payload);
 
     await authRepository.addRefreshToken(user._id.toString(), refreshToken);
+
+    user.lastLoginAt = new Date();
+    await user.save();
 
     return {
       accessToken,
@@ -110,9 +162,10 @@ export class AuthService {
       email: user.email,
       role: user.role,
       avatar: user.avatar,
+      organizationId: user.organizationId?.toString(),
       createdAt: user.createdAt.toISOString(),
       updatedAt: user.updatedAt.toISOString(),
-    };
+    } as any;
   }
 }
 

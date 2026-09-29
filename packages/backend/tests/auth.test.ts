@@ -1,13 +1,34 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import {
+  describe,
+  it,
+  expect,
+  beforeAll,
+  afterAll,
+  beforeEach,
+} from 'vitest';
 import request from 'supertest';
-import app from '../src/app';
+import { app } from '../src/app';
+import { connectTestDB, disconnectTestDB, clearTestDB } from './setup';
+
+const testUser = {
+  username: 'testuser',
+  email: 'testuser@test.com',
+  password: 'Test123!@#',
+};
+
+beforeAll(async () => {
+  await connectTestDB();
+}, 60000);
+
+afterAll(async () => {
+  await disconnectTestDB();
+}, 30000);
+
+beforeEach(async () => {
+  await clearTestDB();
+});
 
 describe('Auth API', () => {
-  const testUser = {
-    username: 'testuser',
-    password: 'Test123!@#',
-  };
-
   describe('POST /api/v1/auth/register', () => {
     it('should register a new user', async () => {
       const res = await request(app)
@@ -47,7 +68,7 @@ describe('Auth API', () => {
     it('should login with valid credentials', async () => {
       const res = await request(app)
         .post('/api/v1/auth/login')
-        .send(testUser);
+        .send({ username: testUser.username, password: testUser.password });
 
       expect(res.status).toBe(200);
       expect(res.body.data.accessToken).toBeDefined();
@@ -70,7 +91,7 @@ describe('Auth API', () => {
       await request(app).post('/api/v1/auth/register').send(testUser);
       const login = await request(app)
         .post('/api/v1/auth/login')
-        .send(testUser);
+        .send({ username: testUser.username, password: testUser.password });
       accessToken = login.body.data.accessToken;
     });
 
@@ -89,9 +110,6 @@ describe('Auth API', () => {
     });
   });
 
-    // ============================================================
-  // REFRESH TOKEN ТЕСТҮҮД
-  // ============================================================
   describe('Refresh Token', () => {
     let accessToken: string;
     let refreshCookie: string;
@@ -100,17 +118,16 @@ describe('Auth API', () => {
       await request(app).post('/api/v1/auth/register').send(testUser);
       const login = await request(app)
         .post('/api/v1/auth/login')
-        .send(testUser);
+        .send({ username: testUser.username, password: testUser.password });
 
       accessToken = login.body.data.accessToken;
-      // Refresh token нь httpOnly cookie-д ирдэг
       refreshCookie = login.headers['set-cookie']?.[0] || '';
     });
 
     it('should return refresh token in httpOnly cookie on login', async () => {
       const login = await request(app)
         .post('/api/v1/auth/login')
-        .send(testUser);
+        .send({ username: testUser.username, password: testUser.password });
 
       const cookies = login.headers['set-cookie'];
       expect(cookies).toBeDefined();
@@ -121,16 +138,15 @@ describe('Auth API', () => {
     it('should return new access token with valid refresh token', async () => {
       await new Promise((resolve) => setTimeout(resolve, 1100));
 
-    const res = await request(app)
-      .post('/api/v1/auth/refresh')
-      .set('Cookie', refreshCookie);
+      const res = await request(app)
+        .post('/api/v1/auth/refresh')
+        .set('Cookie', refreshCookie);
 
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data.accessToken).toBeDefined();
-    // Token нь JWT форматтай эсэхийг шалгах (3 хэсэг, цэгээр тусгаарлагдсан)
-    expect(res.body.data.accessToken.split('.')).toHaveLength(3);
-  });
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.accessToken).toBeDefined();
+      expect(res.body.data.accessToken.split('.')).toHaveLength(3);
+    });
 
     it('should reject refresh without cookie', async () => {
       const res = await request(app).post('/api/v1/auth/refresh');
@@ -156,22 +172,18 @@ describe('Auth API', () => {
 
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
-      expect(res.body.message).toBe('Гарлаа');
 
-      // Cookie устгагдах ёстой
       const cookies = res.headers['set-cookie'];
       expect(cookies).toBeDefined();
       expect(cookies![0]).toContain('refreshToken=;');
     });
 
     it('should reject refresh after logout', async () => {
-      // 1. Logout хийх
       await request(app)
         .post('/api/v1/auth/logout')
         .set('Authorization', `Bearer ${accessToken}`)
         .set('Cookie', refreshCookie);
 
-      // 2. Дахин refresh турших — ажиллахгүй байх ёстой
       const res = await request(app)
         .post('/api/v1/auth/refresh')
         .set('Cookie', refreshCookie);

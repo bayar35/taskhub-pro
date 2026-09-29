@@ -3,17 +3,23 @@ import {
   updateTodoSchema,
   type ITodo,
   type TodoQueryInput,
-  type CreateTodoInput,
 } from '@taskhub/shared';
 import { todoRepository } from './todo.repository';
 import { ApiError } from '../../utils/ApiError';
 import { notificationService } from '../notification/notification.service';
 import { User } from '../../models/User.model';
 import { sendEmail, getTodoCreatedEmail } from '../../utils/mailer';
+import { cacheGet, cacheSet, cacheDel } from '../../config/redis';
 
 export class TodoService {
-  async list(userId: string, query: TodoQueryInput) {
+  async list(organizationId: string, query: TodoQueryInput, userId?: string) {
+    const cacheKey = `todos:${organizationId}:${JSON.stringify(query)}:${userId || 'all'}`;
+
+    const cached = await cacheGet<any>(cacheKey);
+    if (cached) return cached;
+
     const result = await todoRepository.findAll({
+      organizationId,
       userId,
       filters: {
         search: query.search,
@@ -26,25 +32,29 @@ export class TodoService {
       limit: query.limit,
     });
 
-    return {
+    const response = {
       todos: result.todos.map(this.toPublicTodo),
       pagination: result.pagination,
     };
+
+    await cacheSet(cacheKey, response, 60);
+    return response;
   }
 
-  async getById(id: string, userId: string): Promise<ITodo> {
-    const todo = await todoRepository.findById(id, userId);
+  async getById(id: string, organizationId: string): Promise<ITodo> {
+    const todo = await todoRepository.findById(id, organizationId);
     if (!todo) {
       throw ApiError.notFound('Todo олдсонгүй');
     }
     return this.toPublicTodo(todo);
   }
 
-  async create(userId: string, input: any): Promise<ITodo> {
+  async create(organizationId: string, userId: string, input: any): Promise<ITodo> {
     const data = createTodoSchema.parse(input);
 
     const todo = await todoRepository.create({
-      userId: userId as any,
+      organizationId,
+      userId,
       text: data.text,
       category: data.category,
       priority: data.priority,
@@ -53,7 +63,10 @@ export class TodoService {
       completed: false,
     });
 
-    // 1. Notification илгээх (алдаа гарвал алгасах)
+    // Cache цэвэрлэх
+    await cacheDel(`todos:${organizationId}:*`);
+
+    // Notification илгээх
     try {
       await notificationService.create({
         userId,
@@ -66,7 +79,7 @@ export class TodoService {
       console.error('Notification илгээх алдаа:', err);
     }
 
-    // 2. И-мэйл илгээх (async, алдаа гарвал зогсоохгүй)
+    // Email илгээх
     try {
       const user = await User.findById(userId);
       if (user?.email) {
@@ -83,7 +96,7 @@ export class TodoService {
     return this.toPublicTodo(todo);
   }
 
-  async update(id: string, userId: string, input: any): Promise<ITodo> {
+  async update(id: string, organizationId: string, input: any): Promise<ITodo> {
     const data = updateTodoSchema.parse(input);
 
     const updateData: any = { ...data };
@@ -91,36 +104,39 @@ export class TodoService {
       updateData.dueDate = new Date(data.dueDate);
     }
 
-    const todo = await todoRepository.update(id, userId, updateData);
+    const todo = await todoRepository.update(id, organizationId, updateData);
     if (!todo) {
       throw ApiError.notFound('Todo олдсонгүй');
     }
 
+    await cacheDel(`todos:${organizationId}:*`);
     return this.toPublicTodo(todo);
   }
 
-  async toggle(id: string, userId: string): Promise<ITodo> {
-    const existing = await todoRepository.findById(id, userId);
+  async toggle(id: string, organizationId: string): Promise<ITodo> {
+    const existing = await todoRepository.findById(id, organizationId);
     if (!existing) {
       throw ApiError.notFound('Todo олдсонгүй');
     }
 
-    const todo = await todoRepository.update(id, userId, {
+    const todo = await todoRepository.update(id, organizationId, {
       completed: !existing.completed,
     });
 
+    await cacheDel(`todos:${organizationId}:*`);
     return this.toPublicTodo(todo!);
   }
 
-  async delete(id: string, userId: string): Promise<void> {
-    const todo = await todoRepository.delete(id, userId);
+  async delete(id: string, organizationId: string): Promise<void> {
+    const todo = await todoRepository.delete(id, organizationId);
     if (!todo) {
       throw ApiError.notFound('Todo олдсонгүй');
     }
+    await cacheDel(`todos:${organizationId}:*`);
   }
 
-  async getStats(userId: string) {
-    return todoRepository.getStats(userId);
+  async getStats(organizationId: string, userId?: string) {
+    return todoRepository.getStats(organizationId, userId);
   }
 
   private toPublicTodo(todo: any): ITodo {
