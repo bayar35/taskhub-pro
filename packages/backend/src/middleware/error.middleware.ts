@@ -9,27 +9,38 @@ export const errorMiddleware = (
   res: Response,
   _next: NextFunction
 ) => {
-  let statusCode = 500;
-  let message = 'Серверийн алдаа';
-  let errors: any = undefined;
+  try {
+    let statusCode = 500;
+    let message = 'Серверийн алдаа';
+    let errors: any = undefined;
 
-  if (err instanceof ApiError) {
-    statusCode = err.statusCode;
-    message = err.message;
-    errors = err.errors;
+    if (err instanceof ApiError) {
+      statusCode = err.statusCode;
+      message = err.message;
+      errors = err.errors;
+    } else if (err instanceof Error) {
+      message = err.message || 'Серверийн алдаа';
+    }
+
+    // Log
+    logger.error(`${statusCode} - ${message} - ${req.originalUrl}`, {
+      method: req.method,
+      ip: req.ip,
+      stack: env.NODE_ENV === 'development' ? err.stack : undefined,
+    });
+
+    res.status(statusCode).json({
+      success: false,
+      message,
+      ...(errors && { errors }),
+      ...(env.NODE_ENV === 'development' && { stack: err.stack }),
+    });
+  } catch (innerError: any) {
+    // Хэрэв error middleware дээр алдаа гарвал
+    logger.error(`❌ Error middleware дээр алдаа: ${innerError.message}`);
+    res.status(500).json({
+      success: false,
+      message: 'Серверийн алдаа',
+    });
   }
-
-  // Log
-  logger.error(`${statusCode} - ${message} - ${req.originalUrl}`, {
-    method: req.method,
-    ip: req.ip,
-    stack: env.NODE_ENV === 'development' ? err.stack : undefined,
-  });
-
-  res.status(statusCode).json({
-    success: false,
-    message,
-    ...(errors && { errors }),
-    ...(env.NODE_ENV === 'development' && { stack: err.stack }),
-  });
 };

@@ -10,9 +10,6 @@ const server = http.createServer(app);
 // Socket.io
 initSocket(server);
 
-// Database
-connectDB();
-
 // Graceful shutdown
 const shutdown = async (signal: string) => {
   logger.info(`📴 ${signal} дохио ирлээ. Сервер унтрааж байна...`);
@@ -37,13 +34,28 @@ process.on('unhandledRejection', (reason) => {
 
 process.on('uncaughtException', (error) => {
   logger.error('❌ Uncaught Exception:', error);
-  process.exit(1);
 });
 
-const PORT = env.PORT || 5000;
-server.listen(PORT, () => {
-  logger.info(`🚀 Server ${PORT} port дээр ажиллаж байна`);
-  logger.info(`🌍 Environment: ${env.NODE_ENV}`);
-  logger.info(`📡 API: ${env.API_URL}/api/v1`);
-  logger.info(`🏥 Health: ${env.API_URL}/health`);
-});
+// ⬇️ Database холболт хийж, дараа нь сервер эхлүүлэх
+async function startServer() {
+  try {
+    // 1. MongoDB холболт
+    await connectDB();
+    logger.info('✅ Database холбогдлоо');
+
+    // 2. Сервер эхлүүлэх
+    const PORT = env.PORT || 5000;
+    server.listen(PORT, () => {
+      logger.info(`🚀 Server ${PORT} port дээр ажиллаж байна`);
+      logger.info(`🌍 Environment: ${env.NODE_ENV}`);
+      logger.info(`📡 API: ${env.API_URL}/api/v1`);
+      logger.info(`🏥 Health: ${env.API_URL}/health`);
+    });
+  } catch (error: any) {
+    logger.error(`❌ Server эхлүүлэх алдаа: ${error.message}`);
+    logger.error(`Stack: ${error.stack}`);
+    process.exit(1);
+  }
+}
+
+startServer();
