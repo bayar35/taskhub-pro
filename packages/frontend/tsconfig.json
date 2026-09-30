@@ -9,7 +9,6 @@
     "skipLibCheck": true,
     "types": ["vite/client"],
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"],
       "@taskhub/shared": ["../shared/dist/index.d.ts"]
