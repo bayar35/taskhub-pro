@@ -22,7 +22,6 @@ const shutdown = async (signal: string) => {
     process.exit(0);
   });
 
-  // 30 секундын дараа албадан унтраах
   setTimeout(() => {
     logger.error('❌ Албадан унтраалаа');
     process.exit(1);
@@ -41,7 +40,6 @@ process.on('uncaughtException', (error) => {
   process.exit(1);
 });
 
-// Start server
 const PORT = env.PORT || 5000;
 server.listen(PORT, () => {
   logger.info(`🚀 Server ${PORT} port дээр ажиллаж байна`);

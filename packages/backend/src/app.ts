@@ -57,13 +57,21 @@ if (env.NODE_ENV === 'development') {
 
 // Health check
 app.get('/health', (_req, res) => {
-  res.status(200).json({
-    success: true,
-    status: 'healthy',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    environment: env.NODE_ENV,
-  });
+  try {
+    res.status(200).json({
+      success: true,
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      environment: process.env.NODE_ENV || 'unknown',
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      status: 'unhealthy',
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
 });
 
 // API Routes

@@ -1,7 +1,10 @@
 import { z } from 'zod';
 import dotenv from 'dotenv';
 
-dotenv.config();
+// Тест орчинд .env.test, бусад үед .env
+const envFile =
+  process.env.NODE_ENV === 'test' ? '.env.test' : '.env';
+dotenv.config({ path: envFile });
 
 const envSchema = z.object({
   NODE_ENV: z
@@ -9,8 +12,8 @@ const envSchema = z.object({
     .default('development'),
   PORT: z.coerce.number().default(5000),
   MONGO_URI: z.string().min(1, 'MONGO_URI шаардлагатай'),
-  JWT_SECRET: z.string().min(32, 'JWT_SECRET 32+ тэмдэгт'),
-  JWT_REFRESH_SECRET: z.string().min(32, 'JWT_REFRESH_SECRET 32+ тэмдэгт'),
+  JWT_SECRET: z.string().min(1, 'JWT_SECRET шаардлагатай'),
+  JWT_REFRESH_SECRET: z.string().min(1, 'JWT_REFRESH_SECRET шаардлагатай'),
   JWT_EXPIRES_IN: z.string().default('15m'),
   JWT_REFRESH_EXPIRES_IN: z.string().default('7d'),
   CLIENT_URL: z.string().default('http://localhost:5173'),
@@ -49,6 +52,9 @@ const envSchema = z.object({
   // Stripe
   STRIPE_SECRET_KEY: z.string().optional(),
   STRIPE_WEBHOOK_SECRET: z.string().optional(),
+
+  // Sentry
+  SENTRY_DSN: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);

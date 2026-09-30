@@ -26,42 +26,56 @@ interface LoginResult {
 
 export class AuthService {
   async register(input: RegisterInput): Promise<IUser> {
-    const data = registerSchema.parse(input);
-
-    const existing = await authRepository.findByUsername(data.username);
-    if (existing) {
-      throw ApiError.conflict('Энэ нэр бүртгэлтэй байна');
-    }
-
-    const hashedPassword = await hashPassword(data.password);
-
-    // 1. Хэрэглэгч үүсгэх
-    const user = await authRepository.create({
-      username: data.username,
-      email: data.email || `${data.username}@taskhub.local`,
-      password: hashedPassword,
-      role: 'owner',
-    });
-
-    // 2. Автомат organization үүсгэх
     try {
-      await organizationService.create(
-        user._id.toString(),
-        `${data.username}-ийн байгууллага`
-      );
-    } catch (error: any) {
-      logger.error('❌ Organization үүсгэх алдаа:', error);
-      await User.findByIdAndDelete(user._id);
-      throw ApiError.internal(
-        `Байгууллага үүсгэхэд алдаа гарлаа: ${error.message}`
-      );
-    }
+      logger.info(`🔍 Register started: ${input.username}`);
 
-    const updatedUser = await authRepository.findById(user._id.toString());
-    if (!updatedUser) {
-      throw ApiError.internal('Хэрэглэгч олдсонгүй');
+      const data = registerSchema.parse(input);
+      logger.info('✅ Validation passed');
+
+      const existing = await authRepository.findByUsername(data.username);
+      if (existing) {
+        throw ApiError.conflict('Энэ нэр бүртгэлтэй байна');
+      }
+      logger.info('✅ No existing user');
+
+      const hashedPassword = await hashPassword(data.password);
+      logger.info('✅ Password hashed');
+
+      const user = await authRepository.create({
+        username: data.username,
+        email: data.email || `${data.username}@taskhub.local`,
+        password: hashedPassword,
+        role: 'owner',
+      });
+      logger.info(`✅ User created: ${user._id}`);
+
+      // Organization
+      try {
+        await organizationService.create(
+          user._id.toString(),
+          `${data.username}-ийн байгууллага`
+        );
+        logger.info('✅ Organization created');
+      } catch (error: any) {
+        logger.error(`❌ Organization error: ${error.message}`);
+        logger.error(`Stack: ${error.stack}`);
+        await User.findByIdAndDelete(user._id);
+        throw ApiError.internal(
+          `Байгууллага үүсгэхэд алдаа: ${error.message}`
+        );
+      }
+
+      const updatedUser = await authRepository.findById(user._id.toString());
+      if (!updatedUser) {
+        throw ApiError.internal('Хэрэглэгч олдсонгүй');
+      }
+      logger.info('✅ Register complete');
+      return this.toPublicUser(updatedUser);
+    } catch (error: any) {
+      logger.error(`❌ Register error: ${error.message}`);
+      logger.error(`Stack: ${error.stack}`);
+      throw error;
     }
-    return this.toPublicUser(updatedUser);
   }
 
   async login(
@@ -81,7 +95,6 @@ export class AuthService {
       throw ApiError.badRequest('Нэр эсвэл нууц үг буруу');
     }
 
-    // 2FA шалгах
     if (user.twoFactorEnabled) {
       if (!input.twoFactorToken) {
         throw ApiError.unauthorized('2FA код шаардлагатай');
