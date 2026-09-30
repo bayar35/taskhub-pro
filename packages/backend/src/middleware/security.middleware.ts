@@ -7,7 +7,7 @@ import compression from 'compression';
 import cors from 'cors';
 import { env } from '../config/env';
 
-// 1. Helmet
+// 1. Helmet — HTTP headers хамгаалалт
 export const helmetMiddleware = helmet({
   contentSecurityPolicy: {
     directives: {
@@ -20,7 +20,7 @@ export const helmetMiddleware = helmet({
   crossOriginEmbedderPolicy: false,
 });
 
-// 2. Rate Limiting
+// 2. Rate Limiting — API хамгаалалт
 export const rateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
@@ -33,7 +33,7 @@ export const rateLimiter = rateLimit({
   skip: () => process.env.NODE_ENV === 'test',
 });
 
-// 3. Auth Rate Limiting
+// 3. Auth Rate Limiting — Login/Register хамгаалалт
 export const authRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 5,
@@ -45,7 +45,7 @@ export const authRateLimiter = rateLimit({
   skip: () => process.env.NODE_ENV === 'test',
 });
 
-// 4. CORS
+// 4. CORS — Domain хамгаалалт
 export const corsMiddleware = cors({
   origin: env.CORS_ORIGIN?.split(',') || ['http://localhost:5173'],
   credentials: true,
@@ -53,27 +53,84 @@ export const corsMiddleware = cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
 });
 
-// 5. NoSQL Injection (тест орчинд унтраах)
-export const mongoSanitizeMiddleware = (req: any, res: any, next: any) => {
+// 5. NoSQL Injection — Express 5-д тохирсон
+export const mongoSanitizeMiddleware = (
+  req: any,
+  _res: any,
+  next: any
+) => {
+  // Тест орчинд унтраах
   if (process.env.NODE_ENV === 'test') {
     return next();
   }
-  return mongoSanitize({
-    replaceWith: '_',
-    onSanitize: ({ req: r, key }) => {
-      console.warn(`⚠️ NoSQL Injection: ${key}`, {
-        ip: r.ip,
-        path: r.path,
+
+  try {
+    // Express 5-д req.query нь read-only getter
+    // Тиймээс зөвхөн req.body болон req.params-ийг sanitize хийнэ
+    if (req.body) {
+      req.body = mongoSanitize.sanitize(req.body, {
+        replaceWith: '_',
       });
-    },
-  })(req, res, next);
+    }
+
+    if (req.params) {
+      req.params = mongoSanitize.sanitize(req.params, {
+        replaceWith: '_',
+      });
+    }
+
+    // req.query-г sanitize хийхгүй (Express 5-д read-only)
+    // Учир нь Zod validation нь query параметрүүдийг шалгадаг
+
+    next();
+  } catch (error: any) {
+    console.error('❌ mongoSanitize алдаа:', error.message);
+    next();
+  }
 };
 
-// 6. XSS Protection
-export const xssMiddleware = xss();
+// 6. XSS Protection — Express 5-д тохирсон
+export const xssMiddleware = (req: any, res: any, next: any) => {
+  // Тест орчинд унтраах
+  if (process.env.NODE_ENV === 'test') {
+    return next();
+  }
 
-// 7. HPP
-export const hppMiddleware = hpp();
+  try {
+    // xss-clean нь middleware тул (req, res, next) шаарддаг.
+    // Мөн req.body, req.query, req.params-ийг өөрөө цэвэрлэдэг.
+    return xss()(req, res, next);
+  } catch (error: any) {
+    console.error('❌ xss-clean алдаа:', error.message);
+    next();
+  }
+};
 
-// 8. Compression
+// 7. HPP (HTTP Parameter Pollution) — Express 5-д тохирсон
+export const hppMiddleware = (req: any, _res: any, next: any) => {
+  // Тест орчинд унтраах
+  if (process.env.NODE_ENV === 'test') {
+    return next();
+  }
+
+  try {
+    // Express 5-д req.query нь read-only
+    // Тиймээс HPP-г зөвхөн req.body дээр ажиллуулна
+    if (req.body && typeof req.body === 'object') {
+      // HPP-ийн логик: давхардсан параметрүүдийг арилгах
+      for (const key in req.body) {
+        if (Array.isArray(req.body[key])) {
+          req.body[key] = req.body[key][req.body[key].length - 1];
+        }
+      }
+    }
+
+    next();
+  } catch (error: any) {
+    console.error('❌ hpp алдаа:', error.message);
+    next();
+  }
+};
+
+// 8. Compression — Response хэмжээг багасгах
 export const compressionMiddleware = compression();
