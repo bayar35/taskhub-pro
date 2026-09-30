@@ -33,7 +33,13 @@ export interface IOrganization extends Document {
 const OrganizationSchema = new Schema<IOrganization>(
   {
     name: { type: String, required: true, trim: true },
-    slug: { type: String, required: true, unique: true, lowercase: true },
+    slug: {
+      type: String,
+      required: true,
+      unique: true,        // unique → автоматаар index үүсгэдэг
+      lowercase: true,
+      trim: true,
+    },
     plan: {
       type: String,
       enum: ['free', 'basic', 'pro', 'enterprise'],
@@ -68,7 +74,7 @@ const OrganizationSchema = new Schema<IOrganization>(
   { timestamps: true }
 );
 
-OrganizationSchema.index({ slug: 1 });
+// ⚠️ slug-ийг unique: true-ээр зарласан тул дахин index({ slug: 1 }) зарлахгүй
 OrganizationSchema.index({ ownerId: 1 });
 OrganizationSchema.index({ members: 1 });
 

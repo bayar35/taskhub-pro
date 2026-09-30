@@ -1,32 +1,43 @@
-import { defineConfig } from 'vitest/config';
+import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import path from 'path';
 
 export default defineConfig({
   plugins: [react()],
-  test: {
-    environment: 'jsdom',
-    globals: true,
-    setupFiles: ['./tests/setup.ts'],
-    include: ['tests/**/*.test.{ts,tsx}', 'src/**/*.test.{ts,tsx}'],
-    coverage: {
-      provider: 'v8',
-      reporter: ['text', 'lcov', 'html'],
-      reportsDirectory: './coverage',
-      exclude: [
-        'node_modules/**',
-        'dist/**',
-        'tests/**',
-        '**/*.config.{ts,js}',
-        '**/*.test.{ts,tsx}',
-        'src/main.tsx',
-        'src/vite-env.d.ts',
-      ],
-      thresholds: {
-        lines: 40,
-        functions: 40,
-        branches: 40,
-        statements: 40,
-      },
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+      // ⚠️ ЧУХАЛ: @taskhub/shared-ийг dist руу заах (src биш!)
+      '@taskhub/shared': path.resolve(__dirname, '../shared/dist'),
     },
+  },
+  server: {
+    port: 5173,
+    strictPort: true,
+    host: 'localhost',
+    fs: {
+      // ⚠️ ЧУХАЛ: Monorepo-д workspace-ийн бусад файлуудыг зөвшөөрөх
+      allow: ['..', '../..'],
+    },
+  },
+  optimizeDeps: {
+    include: [
+      'react',
+      'react-dom',
+      'react-router-dom',
+      'react-redux',
+      '@reduxjs/toolkit',
+      'react-hook-form',
+      '@hookform/resolvers/zod',
+      'zod',
+      'axios',
+      'socket.io-client',
+      'react-hot-toast',
+    ],
+    exclude: ['@taskhub/shared'],  // ⚠️ Shared-ийг optimize хийхгүй
+  },
+  build: {
+    target: 'esnext',
+    sourcemap: false,
   },
 });

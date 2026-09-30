@@ -4,21 +4,27 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
-    env: {
-      NODE_ENV: 'test', // ⬅️ Тест орчинд NODE_ENV=test
-    },
-    hookTimeout: 60000,
-    testTimeout: 30000,
-    pool: 'forks',
-    poolOptions: {
-      forks: {
-        singleFork: true,
-      },
-    },
+    setupFiles: ['./tests/setup.ts'],
+    testTimeout: 30_000,
+    hookTimeout: 30_000,
+    // Зэрэгцээ тестүүд MongoDB-той зөрчилдөхгүй
     fileParallelism: false,
-    maxConcurrency: 1,
-    sequence: {
-      concurrent: false,
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html', 'lcov'],
+      exclude: [
+        'node_modules/',
+        'tests/',
+        'dist/',
+        '**/*.d.ts',
+        '**/*.config.*',
+      ],
+      thresholds: {
+        lines: 60,
+        functions: 60,
+        branches: 50,
+        statements: 60,
+      },
     },
   },
 });
