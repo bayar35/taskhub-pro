@@ -1,66 +1,79 @@
-import express, { Application } from 'express';
-import cors from 'cors';
-import helmet from 'helmet';
-import compression from 'compression';
-import morgan from 'morgan';
+import express from 'express';
 import cookieParser from 'cookie-parser';
-
-import { env } from './config/env';
-import { apiLimiter } from './middleware/rateLimiter.middleware';
+import morgan from 'morgan';
 import {
-  notFound,
-  errorHandler,
-} from './middleware/error.middleware';
-
+  helmetMiddleware,
+  rateLimiter,
+  corsMiddleware,
+  mongoSanitizeMiddleware,
+  xssMiddleware,
+  hppMiddleware,
+  compressionMiddleware,
+} from './middleware/security.middleware';
+import { errorMiddleware } from './middleware/error.middleware';
+import { notFoundMiddleware } from './middleware/notFound.middleware';
 import authRoutes from './modules/auth/auth.routes';
 import todoRoutes from './modules/todo/todo.routes';
-import notificationRoutes from './modules/notification/notification.routes'; // ⬅️ ЭНД ОРУУЛАХ
+import notificationRoutes from './modules/notification/notification.routes';
+import fileRoutes from './modules/file/file.routes';
+import { logger } from './config/logger';
+import { env } from './config/env';
 
-const app: Application = express();
+export const app = express();
 
-// 🔒 Security
-app.use(helmet());
-app.use(
-  cors({
-    origin: env.CLIENT_URL,
-    credentials: true,
-  })
-);
+// Security middleware
+app.use(helmetMiddleware);
+app.use(corsMiddleware);
+app.use(compressionMiddleware);
 
-// 📦 Parsing
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser());
-
-// ⚡ Performance
-app.use(compression());
-
-// 📝 Logging
-if (env.NODE_ENV !== 'test') {
-  app.use(morgan(env.NODE_ENV === 'production' ? 'combined' : 'dev'));
+// Rate limiter зөвхөн production дээр
+if (env.NODE_ENV === 'production') {
+  app.use(rateLimiter);
 }
 
-// 🛡️ Rate limiting
-app.use('/api', apiLimiter);
+// Body parser
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(cookieParser());
 
-// 🏥 Health check
-app.get('/health', (req, res) => {
-  res.json({
-    status: 'ok',
-    uptime: process.uptime(),
+// Data sanitization — зөвхөн production болон development дээр
+// ⬇️ Тест орчинд mongoSanitize-ийг УНТРААХ
+if (env.NODE_ENV !== 'test') {
+  app.use(mongoSanitizeMiddleware);
+  app.use(xssMiddleware);
+  app.use(hppMiddleware);
+}
+
+// Logging
+if (env.NODE_ENV === 'development') {
+  app.use(morgan('dev'));
+} else if (env.NODE_ENV === 'production') {
+  app.use(
+    morgan('combined', {
+      stream: { write: (message) => logger.info(message.trim()) },
+    })
+  );
+}
+
+// Health check
+app.get('/health', (_req, res) => {
+  res.status(200).json({
+    success: true,
+    status: 'healthy',
     timestamp: new Date().toISOString(),
-    env: env.NODE_ENV,
+    uptime: process.uptime(),
+    environment: env.NODE_ENV,
   });
 });
 
-// 🚏 Routes
+// API Routes
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/todos', todoRoutes);
-app.use('/api/v1/notifications', notificationRoutes); // ⬅️ ЭНД БАЙХ ЁСТОЙ
+app.use('/api/v1/notifications', notificationRoutes);
+app.use('/api/v1/files', fileRoutes);
 
-// ❌ Error handlers (хамгийн сүүлд)
-app.use(notFound);
-app.use(errorHandler);
+// 404 handler
+app.use(notFoundMiddleware);
 
-export { app };
-export default app;
+// Error handler
+app.use(errorMiddleware);

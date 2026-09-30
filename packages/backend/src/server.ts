@@ -1,58 +1,51 @@
-import './instrument';
-import http from 'http';
-import app from './app';
-import { env } from './config/env';
-import { logger } from './config/logger';
+import { app } from './app';
 import { connectDB } from './config/db';
+import { logger } from './config/logger';
+import { env } from './config/env';
 import { initSocket } from './config/socket';
-import { recurringService } from './modules/recurring/recurring.service';
+import http from 'http';
 
-// Server эхлэх үед
-recurringService.startCron();
+const server = http.createServer(app);
 
-// ⬇️ cookieParser, authRoutes, app.use-ууд БҮГД app.ts руу шилжсэн
-// Тиймээс энд дахин бичих шаардлагагүй!
+// Socket.io
+initSocket(server);
 
-async function bootstrap() {
-  try {
-    await connectDB();
-    const server = http.createServer(app);
-    initSocket(server);
+// Database
+connectDB();
 
-    server.listen(env.PORT, () => {
-      logger.info(`🚀 Server ${env.PORT} port дээр ажиллаж байна`);
-      logger.info(`🌍 Environment: ${env.NODE_ENV}`);
-      logger.info(`📡 API: http://localhost:${env.PORT}/api/v1`);
-      logger.info(`🏥 Health: http://localhost:${env.PORT}/health`);
-    });
+// Graceful shutdown
+const shutdown = async (signal: string) => {
+  logger.info(`📴 ${signal} дохио ирлээ. Сервер унтрааж байна...`);
 
-    const shutdown = async (signal: string) => {
-      logger.info(`${signal} дохио хүлээн авлаа. Серверийг хааж байна...`);
-      server.close(() => {
-        logger.info('HTTP server хаагдлаа');
-        process.exit(0);
-      });
-      setTimeout(() => {
-        logger.error('Албадсан хаалт. Forced exit.');
-        process.exit(1);
-      }, 10000);
-    };
+  server.close(async () => {
+    logger.info('✅ HTTP server хаагдлаа');
+    process.exit(0);
+  });
 
-    process.on('SIGTERM', () => shutdown('SIGTERM'));
-    process.on('SIGINT', () => shutdown('SIGINT'));
-  } catch (err) {
-    logger.error(`Server эхлүүлэх алдаа: ${(err as Error).message}`);
+  // 30 секундын дараа албадан унтраах
+  setTimeout(() => {
+    logger.error('❌ Албадан унтраалаа');
     process.exit(1);
-  }
-}
+  }, 30000);
+};
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
 
 process.on('unhandledRejection', (reason) => {
-  logger.error(`Unhandled Rejection: ${reason}`);
+  logger.error('❌ Unhandled Rejection:', reason);
 });
 
-process.on('uncaughtException', (err) => {
-  logger.error(`Uncaught Exception: ${err.message}`);
+process.on('uncaughtException', (error) => {
+  logger.error('❌ Uncaught Exception:', error);
   process.exit(1);
 });
 
-bootstrap();
+// Start server
+const PORT = env.PORT || 5000;
+server.listen(PORT, () => {
+  logger.info(`🚀 Server ${PORT} port дээр ажиллаж байна`);
+  logger.info(`🌍 Environment: ${env.NODE_ENV}`);
+  logger.info(`📡 API: ${env.API_URL}/api/v1`);
+  logger.info(`🏥 Health: ${env.API_URL}/health`);
+});

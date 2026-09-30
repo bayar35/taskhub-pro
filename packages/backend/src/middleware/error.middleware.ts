@@ -1,26 +1,17 @@
-import * as Sentry from '@sentry/node';
 import { Request, Response, NextFunction } from 'express';
 import { ApiError } from '../utils/ApiError';
 import { logger } from '../config/logger';
 import { env } from '../config/env';
 
-export const notFound = (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  next(ApiError.notFound(`Олдсонгүй: ${req.originalUrl}`));
-};
-
-export const errorHandler = (
+export const errorMiddleware = (
   err: Error | ApiError,
   req: Request,
   res: Response,
-  next: NextFunction
+  _next: NextFunction
 ) => {
   let statusCode = 500;
   let message = 'Серверийн алдаа';
-  let errors: any[] = [];
+  let errors: any = undefined;
 
   if (err instanceof ApiError) {
     statusCode = err.statusCode;
@@ -28,17 +19,17 @@ export const errorHandler = (
     errors = err.errors;
   }
 
-  // ⭐ ЭНИЙГ НЭМЭХ — Sentry-д 5xx алдаа илгээх
-  if (statusCode >= 500) {
-    Sentry.captureException(err);
-  }
-
-  logger.error(`${statusCode} - ${message} - ${req.originalUrl}`);
+  // Log
+  logger.error(`${statusCode} - ${message} - ${req.originalUrl}`, {
+    method: req.method,
+    ip: req.ip,
+    stack: env.NODE_ENV === 'development' ? err.stack : undefined,
+  });
 
   res.status(statusCode).json({
     success: false,
     message,
-    ...(errors.length > 0 && { errors }),
+    ...(errors && { errors }),
     ...(env.NODE_ENV === 'development' && { stack: err.stack }),
   });
 };
