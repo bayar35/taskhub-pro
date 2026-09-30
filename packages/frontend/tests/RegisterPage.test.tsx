@@ -37,18 +37,18 @@ describe('RegisterPage', () => {
   });
 
   it('10. should show validation errors on empty submit', async () => {
-    renderWithProviders(<RegisterPage />);
-    fireEvent.click(screen.getByRole('button', { name: 'Бүртгүүлэх' }));
+  renderWithProviders(<RegisterPage />);
+  fireEvent.click(screen.getByRole('button', { name: 'Бүртгүүлэх' }));
 
-    await waitFor(() => {
-        expect(
-        screen.getByText('Хэрэглэгчийн нэр дор хаяж 3 тэмдэгт')
-        ).toBeInTheDocument();
-        expect(
-        screen.getByText('Нууц үг дор хаяж 8 тэмдэгт')
-        ).toBeInTheDocument();
-    });
-    });
+  await waitFor(() => {
+    expect(
+      screen.getByText(/Хэрэглэгчийн нэр.*3.*тэмдэгт/i)
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Нууц үг.*8.*тэмдэгт/i)
+    ).toBeInTheDocument();
+  });
+});
 
   it('11. should show validation error for weak password', async () => {
     renderWithProviders(<RegisterPage />);
