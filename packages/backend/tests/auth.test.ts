@@ -10,10 +10,14 @@ import request from 'supertest';
 import { app } from '../src/app';
 import { connectTestDB, disconnectTestDB, clearTestDB } from './setup';
 
-const testUser = {
-  username: 'testuser',
-  email: 'testuser@test.com',
-  password: 'Test123!@#',
+// Тест бүрт давхцахгүй байхын тулд unique нэр үүсгэх функц
+const getUniqueUser = () => {
+  const uniqueSuffix = `${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+  return {
+    username: `testuser_${uniqueSuffix}`,
+    email: `testuser_${uniqueSuffix}@test.com`,
+    password: 'Test123!@#',
+  };
 };
 
 beforeAll(async () => {
@@ -31,13 +35,14 @@ beforeEach(async () => {
 describe('Auth API', () => {
   describe('POST /api/v1/auth/register', () => {
     it('should register a new user', async () => {
+      const user = getUniqueUser();
       const res = await request(app)
         .post('/api/v1/auth/register')
-        .send(testUser);
+        .send(user);
 
       expect(res.status).toBe(201);
       expect(res.body.success).toBe(true);
-      expect(res.body.data.username).toBe(testUser.username);
+      expect(res.body.data.username).toBe(user.username);
       expect(res.body.data).not.toHaveProperty('password');
     });
 
@@ -51,34 +56,42 @@ describe('Auth API', () => {
     });
 
     it('should reject duplicate username', async () => {
-      await request(app).post('/api/v1/auth/register').send(testUser);
+      const user = getUniqueUser();
+      
+      // Эхний удаа амжилттай бүртгэнэ
+      await request(app).post('/api/v1/auth/register').send(user);
+      
+      // Дараа нь мөн ижил хэрэглэгчээр дахин бүртгэхэд алдаа өгөх ёстой
       const res = await request(app)
         .post('/api/v1/auth/register')
-        .send(testUser);
+        .send(user);
 
       expect(res.status).toBe(409);
     });
   });
 
   describe('POST /api/v1/auth/login', () => {
+    let currentUser: any;
+
     beforeEach(async () => {
-      await request(app).post('/api/v1/auth/register').send(testUser);
+      currentUser = getUniqueUser();
+      await request(app).post('/api/v1/auth/register').send(currentUser);
     });
 
     it('should login with valid credentials', async () => {
       const res = await request(app)
         .post('/api/v1/auth/login')
-        .send({ username: testUser.username, password: testUser.password });
+        .send({ username: currentUser.username, password: currentUser.password });
 
       expect(res.status).toBe(200);
       expect(res.body.data.accessToken).toBeDefined();
-      expect(res.body.data.user.username).toBe(testUser.username);
+      expect(res.body.data.user.username).toBe(currentUser.username);
     });
 
     it('should reject invalid password', async () => {
       const res = await request(app)
         .post('/api/v1/auth/login')
-        .send({ username: testUser.username, password: 'wrong' });
+        .send({ username: currentUser.username, password: 'wrong' });
 
       expect(res.status).toBe(400);
     });
@@ -86,12 +99,14 @@ describe('Auth API', () => {
 
   describe('GET /api/v1/auth/me', () => {
     let accessToken: string;
+    let currentUser: any;
 
     beforeEach(async () => {
-      await request(app).post('/api/v1/auth/register').send(testUser);
+      currentUser = getUniqueUser();
+      await request(app).post('/api/v1/auth/register').send(currentUser);
       const login = await request(app)
         .post('/api/v1/auth/login')
-        .send({ username: testUser.username, password: testUser.password });
+        .send({ username: currentUser.username, password: currentUser.password });
       accessToken = login.body.data.accessToken;
     });
 
@@ -101,7 +116,7 @@ describe('Auth API', () => {
         .set('Authorization', `Bearer ${accessToken}`);
 
       expect(res.status).toBe(200);
-      expect(res.body.data.username).toBe(testUser.username);
+      expect(res.body.data.username).toBe(currentUser.username);
     });
 
     it('should reject without token', async () => {
@@ -113,12 +128,14 @@ describe('Auth API', () => {
   describe('Refresh Token', () => {
     let accessToken: string;
     let refreshCookie: string;
+    let currentUser: any;
 
     beforeEach(async () => {
-      await request(app).post('/api/v1/auth/register').send(testUser);
+      currentUser = getUniqueUser();
+      await request(app).post('/api/v1/auth/register').send(currentUser);
       const login = await request(app)
         .post('/api/v1/auth/login')
-        .send({ username: testUser.username, password: testUser.password });
+        .send({ username: currentUser.username, password: currentUser.password });
 
       accessToken = login.body.data.accessToken;
       refreshCookie = login.headers['set-cookie']?.[0] || '';
@@ -127,7 +144,7 @@ describe('Auth API', () => {
     it('should return refresh token in httpOnly cookie on login', async () => {
       const login = await request(app)
         .post('/api/v1/auth/login')
-        .send({ username: testUser.username, password: testUser.password });
+        .send({ username: currentUser.username, password: currentUser.password });
 
       const cookies = login.headers['set-cookie'];
       expect(cookies).toBeDefined();

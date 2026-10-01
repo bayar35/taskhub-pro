@@ -1,58 +1,26 @@
-import { defineConfig } from 'vite';
+import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
-import { VitePWA } from 'vite-plugin-pwa';
 import path from 'path';
 
 export default defineConfig({
-  plugins: [
-    react(),
-    VitePWA({
-      registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png'],
-      manifest: {
-        name: 'TaskHub Pro',
-        short_name: 'TaskHub',
-        description: 'Smart task management for teams',
-        theme_color: '#2563eb',
-        background_color: '#ffffff',
-        display: 'standalone',
-        orientation: 'portrait',
-        scope: '/',
-        start_url: '/',
-        icons: [
-          { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
-          { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png', purpose: 'maskable' },
-          { src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
-          { src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
-        ],
-      },
-      workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-      },
-      devOptions: { enabled: false },
-    }),
-  ],
-
-  // ✅ Зөвхөн alias (optimizeDeps ХАСАХ!)
+  plugins: [react()],
+  test: {
+    globals: true,
+    environment: 'jsdom',           // ✅ browser API (document, localStorage)
+    setupFiles: ['./tests/setup.ts'],
+    include: ['tests/**/*.test.{ts,tsx}'],  // ✅ ЗӨВХӨН tests/, e2e-г оруулахгүй
+    exclude: [
+      'node_modules',
+      'dist',
+      'e2e/**',                     // ✅ Playwright тестүүдийг хасах
+    ],
+    css: true,
+    testTimeout: 30000,
+    hookTimeout: 30000,
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
-      '@taskhub/shared': path.resolve(__dirname, '../shared/dist'),
     },
-  },
-
-  server: {
-    port: 5173,
-    strictPort: true,
-    fs: {
-      allow: ['..', '../..'],
-    },
-  },
-
-  // ❌ optimizeDeps БҮРЭН ХАСАХ!
-  // Vite өөрөө автоматаар optimiz хийнэ.
-
-  build: {
-    target: 'esnext',
   },
 });
