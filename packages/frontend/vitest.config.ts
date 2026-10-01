@@ -1,43 +1,26 @@
-import { defineConfig } from 'vite';
+import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 
 export default defineConfig({
   plugins: [react()],
+  test: {
+    globals: true,
+    environment: 'jsdom',                    // ✅ browser API
+    setupFiles: ['./tests/setup.ts'],        // ✅ setup file
+    include: ['tests/**/*.test.{ts,tsx}', 'src/**/*.test.{ts,tsx}'],  // ✅ зөвхөн tests/ болон src/
+    exclude: [
+      'node_modules',
+      'dist',
+      'e2e/**',                              // ✅ Playwright тестүүдийг хасах
+    ],
+    css: true,
+    testTimeout: 30000,
+    hookTimeout: 30000,
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
-      // ⚠️ ЧУХАЛ: @taskhub/shared-ийг dist руу заах (src биш!)
-      '@taskhub/shared': path.resolve(__dirname, '../shared/dist'),
     },
-  },
-  server: {
-    port: 5173,
-    strictPort: true,
-    host: 'localhost',
-    fs: {
-      // ⚠️ ЧУХАЛ: Monorepo-д workspace-ийн бусад файлуудыг зөвшөөрөх
-      allow: ['..', '../..'],
-    },
-  },
-  optimizeDeps: {
-    include: [
-      'react',
-      'react-dom',
-      'react-router-dom',
-      'react-redux',
-      '@reduxjs/toolkit',
-      'react-hook-form',
-      '@hookform/resolvers/zod',
-      'zod',
-      'axios',
-      'socket.io-client',
-      'react-hot-toast',
-    ],
-    exclude: ['@taskhub/shared'],  // ⚠️ Shared-ийг optimize хийхгүй
-  },
-  build: {
-    target: 'esnext',
-    sourcemap: false,
   },
 });
