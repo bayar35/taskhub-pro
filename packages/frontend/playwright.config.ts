@@ -4,16 +4,19 @@ export default defineConfig({
   testDir: './e2e',
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
-  retries: 0,
+  retries: process.env.CI ? 1 : 0,
   workers: 1,
-  reporter: 'html',
-  timeout: 60000,          // ← 60 секунд (30 биш)
+  reporter: process.env.CI
+    ? [['html', { outputFolder: 'playwright-report' }], ['list']]
+    : 'html',
+  timeout: 60000,
   use: {
-    baseURL: 'http://localhost:5173',
+    baseURL: process.env.E2E_BASE_URL || 'http://localhost:5173',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
-    navigationTimeout: 60000,  // ← нэмэх
-    actionTimeout: 30000,      // ← нэмэх
+    video: 'retain-on-failure',
+    navigationTimeout: 60000,
+    actionTimeout: 30000,
   },
   projects: [
     {
@@ -21,12 +24,17 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
   ],
-  webServer: {
-    command: 'npm run dev',
-    url: 'http://localhost:5173',
-    reuseExistingServer: true,   // ← үргэлж true (dev server-ийг дахин ашиглах)
-    timeout: 120000,             // ← 2 минут
-    stdout: 'pipe',              // ← debug-д хэрэгтэй
-    stderr: 'pipe',
-  },
+
+  // ✅ CI дээр Playwright өөрөө server асаахгүй
+  //    (e2e.yml дээр backend + frontend preview асаана)
+  webServer: process.env.CI
+    ? undefined
+    : {
+        command: 'npm run dev',
+        url: 'http://localhost:5173',
+        reuseExistingServer: true,
+        timeout: 120000,
+        stdout: 'pipe',
+        stderr: 'pipe',
+      },
 });
