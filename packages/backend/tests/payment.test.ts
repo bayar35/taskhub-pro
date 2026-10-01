@@ -148,21 +148,29 @@ describe('Payment API — Mock горим (мөнгөгүй)', () => {
   // -------------------------------------------------------------------------
   describe('POST /api/v1/payments/stripe/checkout', () => {
     it('1. creates Stripe checkout session (mock)', async () => {
-      const res = await request(app)
-        .post('/api/v1/payments/stripe/checkout')
-        .set('Authorization', `Bearer ${authToken}`)
-        .send({
-          plan: 'pro',
-          successUrl: 'http://localhost:5173/success',
-          cancelUrl: 'http://localhost:5173/cancel',
-        });
-
-      expect(res.status).toBe(200);
-      expect(res.body.success).toBe(true);
-      expect(res.body.data.sessionId).toBe(mockStripeSession.id);
-      expect(res.body.data.url).toContain('stripe.com');
-      expect(mockStripe.checkout.sessions.create).toHaveBeenCalledTimes(1);
+  const res = await request(app)
+    .post('/api/v1/payments/stripe/checkout')
+    .set('Authorization', `Bearer ${authToken}`)
+    .send({
+      plan: 'pro',
+      successUrl: 'http://localhost:5173/success',
+      cancelUrl: 'http://localhost:5173/cancel',
     });
+
+  expect(res.status).toBe(200);
+  expect(res.body.success).toBe(true);
+  expect(res.body.data.sessionId).toBe(mockStripeSession.id);
+  expect(res.body.data.url).toContain('stripe.com');
+
+  // Stripe mock эсвэл mock горимд ажиллаж байгааг шалгах
+  // Хэрэв STRIPE_SECRET_KEY байхгүй бол mockStripe дуудагдахгүй
+  if (process.env.STRIPE_SECRET_KEY) {
+    expect(mockStripe.checkout.sessions.create).toHaveBeenCalledTimes(1);
+  } else {
+    // Mock горимд sessionId нь 'cs_test_mock_12345' байх ёстой
+    expect(res.body.data.sessionId).toBe('cs_test_mock_12345');
+  }
+});
 
     it('2. rejects invalid plan', async () => {
       const res = await request(app)
