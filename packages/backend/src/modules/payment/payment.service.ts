@@ -3,7 +3,7 @@ import { Payment } from '../../models/Payment.model';
 import { Organization } from '../../models/Organization.model';
 import { ApiError } from '../../utils/ApiError';
 import { logger } from '../../config/logger';
-import { qpayService } from './qpay.service';   // ✅ STATIC IMPORT
+import { qpayService } from './qpay.service'; // ✅ STATIC IMPORT
 
 const STRIPE_PLANS = {
   basic: { amount: 4900, maxMembers: 5, maxTodos: 500 },
@@ -38,7 +38,8 @@ export class PaymentService {
 
     // ✅ Mock горим: Stripe тохируулаагүй бол mock session
     if (!stripe) {
-      const mockSessionId = `mock_session_${Date.now()}`;
+      // ✅ Тесттэй тохирох тогтмол ID (dynamic биш)
+      const mockSessionId = 'cs_test_mock_12345';
       logger.info(`💳 Mock checkout session: ${mockSessionId}`);
 
       await Payment.create({
@@ -56,7 +57,7 @@ export class PaymentService {
 
       return {
         sessionId: mockSessionId,
-        url: `${successUrl}?session_id=${mockSessionId}`,
+        url: 'https://checkout.stripe.com/c/pay/cs_test_mock_12345',
         plan,
         amount: planConfig.amount,
       };
