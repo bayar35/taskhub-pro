@@ -1,61 +1,78 @@
-import { describe, it, expect, beforeAll, afterAll, vi, beforeEach } from 'vitest';
+import {
+  describe,
+  it,
+  expect,
+  beforeAll,
+  afterAll,
+  vi,
+  beforeEach,
+} from 'vitest';
 import request from 'supertest';
 import mongoose from 'mongoose';
-import app from '../src/app';
+import { app } from '../src/app';
 
-// ---------------------------------------------------------------------------
-// Stripe-г бүрэн mock хийх (жинхэнэ API дуудахгүй)
-// ---------------------------------------------------------------------------
-const mockStripeSession = {
-  id: 'cs_test_mock_12345',
-  url: 'https://checkout.stripe.com/c/pay/cs_test_mock_12345',
-  customer: 'cus_mock_123',
-  subscription: 'sub_mock_123',
-  metadata: {
-    organizationId: '000000000000000000000001',
-    userId: '000000000000000000000002',
-    plan: 'pro',
-  },
-};
-
-const mockStripe = {
-  checkout: {
-    sessions: {
-      create: vi.fn().mockResolvedValue(mockStripeSession),
+// ===========================================================================
+// ✅ vi.hoisted() — mock-уудыг hoist хийхэд ашиглана
+// ===========================================================================
+const mocks = vi.hoisted(() => {
+  const mockStripeSession = {
+    id: 'cs_test_mock_12345',
+    url: 'https://checkout.stripe.com/c/pay/cs_test_mock_12345',
+    customer: 'cus_mock_123',
+    subscription: 'sub_mock_123',
+    metadata: {
+      organizationId: '000000000000000000000001',
+      userId: '000000000000000000000002',
+      plan: 'pro',
     },
-  },
-  webhooks: {
-    constructEvent: vi.fn(),
-  },
-};
+  };
 
+  const mockQPayInvoice = {
+    invoice_id: 'qpay_mock_invoice_123',
+    qr_text: 'mock_qr_text',
+    qr_image: 'data:image/png;base64,mock',
+    urls: [{ name: 'qpay', description: 'QPay', link: 'qpay://mock' }],
+  };
+
+  const mockStripe = {
+    checkout: {
+      sessions: {
+        create: vi.fn().mockResolvedValue(mockStripeSession),
+      },
+    },
+    webhooks: {
+      constructEvent: vi.fn(),
+    },
+  };
+
+  const qpayService = {
+    createInvoice: vi.fn().mockResolvedValue(mockQPayInvoice),
+    checkPayment: vi
+      .fn()
+      .mockResolvedValue({ paid: true, paid_amount: 14900 }),
+    getToken: vi.fn().mockResolvedValue('mock_access_token'),
+  };
+
+  return { mockStripeSession, mockQPayInvoice, mockStripe, qpayService };
+});
+
+// ===========================================================================
+// Mock-ууд
+// ===========================================================================
 vi.mock('stripe', () => ({
-  default: vi.fn(() => mockStripe),
+  default: vi.fn(() => mocks.mockStripe),
 }));
-
-// ---------------------------------------------------------------------------
-// QPay-г mock хийх
-// ---------------------------------------------------------------------------
-const mockQPayInvoice = {
-  invoice_id: 'qpay_mock_invoice_123',
-  qr_text: 'mock_qr_text',
-  qr_image: 'data:image/png;base64,mock',
-  urls: [
-    { name: 'qpay', description: 'QPay', link: 'qpay://mock' },
-  ],
-};
 
 vi.mock('../src/modules/payment/qpay.service', () => ({
-  QPayService: {
-    createInvoice: vi.fn().mockResolvedValue(mockQPayInvoice),
-    checkPayment: vi.fn().mockResolvedValue({ paid: true, paid_amount: 14900 }),
-    getToken: vi.fn().mockResolvedValue('mock_access_token'),
-  },
+  qpayService: mocks.qpayService,
 }));
 
-// ---------------------------------------------------------------------------
+// Дараа нь ашиглахад хялбар болгох:
+const { mockStripeSession, mockQPayInvoice, mockStripe, qpayService } = mocks;
+
+// ===========================================================================
 // Test user + org бэлтгэх
-// ---------------------------------------------------------------------------
+// ===========================================================================
 let authToken: string;
 let organizationId: string;
 let userId: string;
@@ -66,25 +83,53 @@ const testUser = {
   password: 'TestPass123!',
 };
 
-beforeAll(async () => {
-  if (mongoose.connection.readyState === 0) {
-    await mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/taskhub_test');
-  }
+beforeAll(
+  async () => {
+    if (mongoose.connection.readyState === 0) {
+      await mongoose.connect(
+        process.env.MONGO_URI ||
+          'mongodb://localhost:27017/taskhub_test'
+      );
+    }
 
-  // Register → token + org
-  const reg = await request(app)
-    .post('/api/v1/auth/register')
-    .send(testUser)
-    .expect(201);
+    const reg = await request(app)
+      .post('/api/v1/auth/register')
+      .send(testUser)
+      .expect(201);
 
-  authToken = reg.body.data?.token || reg.body.token;
-  organizationId = reg.body.data?.user?.organizationId || reg.body.user?.organizationId;
-  userId = reg.body.data?.user?._id || reg.body.user?._id;
+    console.log('📦 Register response:', JSON.stringify(reg.body, null, 2));
 
-  expect(authToken).toBeTruthy();
-  expect(organizationId).toBeTruthy();
-  expect(userId).toBeTruthy();
-});
+    const registeredUser = reg.body.data;
+    userId = registeredUser._id;
+    organizationId = registeredUser.organizationId;
+
+    console.log('👤 userId:', userId);
+    console.log('🏢 organizationId:', organizationId);
+
+    const loginRes = await request(app)
+      .post('/api/v1/auth/login')
+      .send({
+        username: testUser.username,
+        password: testUser.password,
+      })
+      .expect(200);
+
+    console.log('📦 Login response:', JSON.stringify(loginRes.body, null, 2));
+
+    authToken =
+      loginRes.body.data?.accessToken ||
+      loginRes.body.data?.token ||
+      loginRes.body.accessToken ||
+      loginRes.body.token;
+
+    console.log('🔑 authToken:', authToken ? '✅ байна' : '❌ байхгүй');
+
+    expect(authToken).toBeTruthy();
+    expect(organizationId).toBeTruthy();
+    expect(userId).toBeTruthy();
+  },
+  120000
+);
 
 afterAll(async () => {
   await mongoose.connection.close();
@@ -94,9 +139,9 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
-// ---------------------------------------------------------------------------
+// ===========================================================================
 // Тестүүд
-// ---------------------------------------------------------------------------
+// ===========================================================================
 describe('Payment API — Mock горим (мөнгөгүй)', () => {
   // -------------------------------------------------------------------------
   // Stripe
@@ -264,7 +309,6 @@ describe('Payment API — Mock горим (мөнгөгүй)', () => {
   // -------------------------------------------------------------------------
   describe('Plan activation', () => {
     it('11. activates plan after successful payment', async () => {
-      // Webhook дамжуулж plan идэвхжүүлэх
       const mockEvent = {
         type: 'checkout.session.completed',
         data: {
@@ -290,14 +334,15 @@ describe('Payment API — Mock горим (мөнгөгүй)', () => {
         .send(JSON.stringify(mockEvent))
         .expect(200);
 
-      // Organization-ийг шалгах
-      const { Organization } = await import('../src/models/organization.model');
+      const { Organization } = await import(
+        '../src/models/Organization.model.js'
+      );
       const org = await Organization.findById(organizationId);
 
       expect(org).toBeTruthy();
       expect(org?.plan).toBe('basic');
       expect(org?.subscription.status).toBe('active');
-      expect(org?.limits.maxMembers).toBe(5);       // basic plan
+      expect(org?.limits.maxMembers).toBe(5);
       expect(org?.limits.maxTodos).toBe(500);
     });
 
@@ -321,7 +366,9 @@ describe('Payment API — Mock горим (мөнгөгүй)', () => {
         .send(JSON.stringify(mockEvent))
         .expect(200);
 
-      const { Organization } = await import('../src/models/organization.model');
+      const { Organization } = await import(
+        '../src/models/Organization.model.js'
+      );
       const org = await Organization.findById(organizationId);
 
       expect(org?.plan).toBe('free');

@@ -16,35 +16,30 @@ import authRoutes from './modules/auth/auth.routes';
 import todoRoutes from './modules/todo/todo.routes';
 import notificationRoutes from './modules/notification/notification.routes';
 import fileRoutes from './modules/file/file.routes';
+import paymentRoutes from './modules/payment/payment.routes';  // ✅ НЭМЭХ
 import { logger } from './config/logger';
 import { env } from './config/env';
 
 export const app = express();
 
-// Security middleware
 app.use(helmetMiddleware);
 app.use(corsMiddleware);
 app.use(compressionMiddleware);
 
-// Rate limiter зөвхөн production дээр
 if (env.NODE_ENV === 'production') {
   app.use(rateLimiter);
 }
 
-// Body parser
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
-// Data sanitization — зөвхөн production болон development дээр
-// ⬇️ Тест орчинд mongoSanitize-ийг УНТРААХ
 if (env.NODE_ENV !== 'test') {
   app.use(mongoSanitizeMiddleware);
   app.use(xssMiddleware);
   app.use(hppMiddleware);
 }
 
-// Logging
 if (env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 } else if (env.NODE_ENV === 'production') {
@@ -55,23 +50,14 @@ if (env.NODE_ENV === 'development') {
   );
 }
 
-// Health check
 app.get('/health', (_req, res) => {
-  try {
-    res.status(200).json({
-      success: true,
-      status: 'healthy',
-      timestamp: new Date().toISOString(),
-      uptime: process.uptime(),
-      environment: process.env.NODE_ENV || 'unknown',
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      status: 'unhealthy',
-      error: error instanceof Error ? error.message : 'Unknown error',
-    });
-  }
+  res.status(200).json({
+    success: true,
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    environment: process.env.NODE_ENV || 'unknown',
+  });
 });
 
 // API Routes
@@ -79,9 +65,7 @@ app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/todos', todoRoutes);
 app.use('/api/v1/notifications', notificationRoutes);
 app.use('/api/v1/files', fileRoutes);
+app.use('/api/v1/payments', paymentRoutes);  // ✅ НЭМЭХ
 
-// 404 handler
 app.use(notFoundMiddleware);
-
-// Error handler
 app.use(errorMiddleware);
