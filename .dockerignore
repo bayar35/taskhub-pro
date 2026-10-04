@@ -1,0 +1,14 @@
+node_modules
+**/node_modules
+**/dist
+**/coverage
+**/.turbo
+**/.cache
+**/*.log
+.git
+.gitignore
+.github
+.vscode
+README.md
+docker-compose.yml
+Dockerfile
