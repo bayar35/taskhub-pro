@@ -1,0 +1,36 @@
+{
+  "name": "taskhub-pro",
+  "version": "1.0.0",
+  "private": true,
+  "description": "TaskHub Pro - MERN SaaS platform",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "test:coverage": "turbo run test:coverage",
+    "test:coverage:backend": "npm run test:coverage --workspace=packages/backend",
+    "test:coverage:frontend": "npm run test:coverage --workspace=packages/frontend",
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:report": "playwright show-report",
+    "lint": "turbo run lint",
+    "clean": "turbo run clean && rimraf node_modules",
+    "format": "prettier --write \"**/*.{ts,tsx,md,json}\""
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.48.0",
+    "@types/node": "^22.0.0",
+    "prettier": "^3.3.0",
+    "rimraf": "^6.0.0",
+    "turbo": "^2.0.0",
+    "typescript": "^5.5.0"
+  },
+  "engines": {
+    "node": ">=22.0.0",
+    "npm": ">=10.0.0"
+  },
+  "packageManager": "npm@10.0.0"
+}
