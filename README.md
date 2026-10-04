@@ -1,6 +1,15 @@
 # TaskHub Pro
 
 > Senior-grade MERN SaaS platform with multi-tenancy, 2FA, PWA, AI integration, and **115 passing tests** (49 backend + 66 frontend).
+# TaskHub Pro
+
+> Senior-grade MERN SaaS platform with multi-tenancy, 2FA, PWA, AI integration, and **115 passing tests** (49 backend + 66 frontend).
+
+[![Tests](https://github.com/bayar35/taskhub-pro/actions/workflows/test.yml/badge.svg)](https://github.com/bayar35/taskhub-pro/actions/workflows/test.yml)
+[![E2E Tests](https://github.com/bayar35/taskhub-pro/actions/workflows/e2e.yml/badge.svg)](https://github.com/bayar35/taskhub-pro/actions/workflows/e2e.yml)
+[![codecov](https://codecov.io/gh/bayar35/taskhub-pro/branch/main/graph/badge.svg)](https://codecov.io/gh/bayar35/taskhub-pro)
+[![API Docs](https://img.shields.io/badge/API%20Docs-Swagger-85EA2D?logo=swagger)](https://taskhub-api-wnu9.onrender.com/api-docs)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 [![Tests](https://github.com/bayar35/taskhub-pro/actions/workflows/test.yml/badge.svg)](https://github.com/bayar35/taskhub-pro/actions/workflows/test.yml)
 [![E2E Tests](https://github.com/bayar35/taskhub-pro/actions/workflows/e2e.yml/badge.svg)](https://github.com/bayar35/taskhub-pro/actions/workflows/e2e.yml)
