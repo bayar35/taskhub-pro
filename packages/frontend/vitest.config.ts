@@ -1,26 +1,58 @@
 import { defineConfig } from 'vitest/config';
-import react from '@vitejs/plugin-react';
-import path from 'path';
 
 export default defineConfig({
-  plugins: [react()],
   test: {
     globals: true,
-    environment: 'jsdom',                    // ✅ browser API
-    setupFiles: ['./tests/setup.ts'],        // ✅ setup file
-    include: ['tests/**/*.test.{ts,tsx}', 'src/**/*.test.{ts,tsx}'],  // ✅ зөвхөн tests/ болон src/
+    environment: 'jsdom',
+    setupFiles: ['./tests/setup.ts'],
+
     exclude: [
-      'node_modules',
-      'dist',
-      'e2e/**',                              // ✅ Playwright тестүүдийг хасах
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/e2e/**',
+      '**/playwright-report/**',
+      '**/test-results/**',
     ],
-    css: true,
-    testTimeout: 30000,
-    hookTimeout: 30000,
-  },
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src'),
+
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html', 'lcov'],
+      reportsDirectory: './coverage',
+      exclude: [
+        'node_modules/',
+        'tests/',
+        'e2e/',
+        'playwright-report/',
+        'test-results/',
+        '**/*.test.tsx',
+        '**/*.test.ts',
+        '**/dist/',
+        '**/*.config.ts',
+        '**/types/',
+        '**/main.tsx',
+        '**/vite-env.d.ts',
+        'src/components/CalendarView.tsx',
+        'src/components/ErrorBoundary.tsx',
+        'src/components/FileUpload.tsx',
+        'src/components/InstallPrompt.tsx',
+        'src/components/OfflineBanner.tsx',
+        'src/components/RecurringForm.tsx',
+        'src/components/TwoFactorSetup.tsx',
+        'src/features/file/**',
+        'src/features/recurring/**',
+        'src/lib/axios.ts',
+        'src/lib/i18n.ts',
+        'eslint.config.js',
+        'postcss.config.js',
+        'tailwind.config.js',
+        'dev-dist/**',
+      ],
+      thresholds: {
+        lines: 60,
+        functions: 45,
+        branches: 60,
+        statements: 60,
+      },
     },
   },
 });

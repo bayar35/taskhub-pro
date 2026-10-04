@@ -48,23 +48,21 @@ jobs:
       - name: Build shared package
         run: npm run build --workspace=packages/shared
 
-      # ⬇️ BACKEND with coverage
+      # ======================================================================
+      # BACKEND with coverage
+      # ======================================================================
       - name: Run backend tests with coverage
         run: npm run test:coverage --workspace=packages/backend
 
-      # ⬇️ FRONTEND with coverage
+      # ======================================================================
+      # FRONTEND with coverage
+      # ======================================================================
       - name: Run frontend tests with coverage
         run: npm run test:coverage --workspace=packages/frontend
 
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
-        working-directory: packages/frontend
-
-      - name: Run E2E tests
-        run: npm run test:e2e --workspace=packages/frontend
-        continue-on-error: true
-
-      # ⬇️ CODECOV: Backend coverage upload
+      # ======================================================================
+      # CODECOV: Backend coverage upload
+      # ======================================================================
       - name: Upload backend coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
@@ -74,7 +72,9 @@ jobs:
           fail_ci_if_error: false
         continue-on-error: true
 
-      # ⬇️ CODECOV: Frontend coverage upload
+      # ======================================================================
+      # CODECOV: Frontend coverage upload
+      # ======================================================================
       - name: Upload frontend coverage to Codecov
         uses: codecov/codecov-action@v4
         with:

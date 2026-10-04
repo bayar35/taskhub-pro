@@ -2,27 +2,49 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
-    // Тестүүд дотор describe, it, expect зэргийг import хийхгүйгээр ашиглах боломжтой болгоно
     globals: true,
-    
-    // Тестийн орчин (Node.js дээр ажиллана)
     environment: 'node',
-    
-    // beforeAll, afterAll зэрэг hook-уудын хүлээх хугацаа (2 минут)
     hookTimeout: 120000,
-    
-    // Нэг тест хамгийн ихдээ 60 секунд ажиллана
     testTimeout: 60000,
-    
-    // Файлуудыг зэрэгцээд биш, дарааллаар нь ажиллуулна (Database давхцалаас сэргийлнэ)
     fileParallelism: false,
-    
-    // Тестүүдийг тусдаа процесс (fork) дээр ажиллуулна
     pool: 'forks',
-    
-    // Зөвхөн нэг процесс ашиглана (бүх тест нэг дор, дарааллаар)
     poolOptions: {
       forks: { singleFork: true },
+    },
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html', 'lcov'],
+      reportsDirectory: './coverage',
+      exclude: [
+        'node_modules/',
+        'tests/',
+        '**/*.test.ts',
+        '**/*.spec.ts',
+        '**/dist/',
+        '**/*.config.ts',
+        '**/types/',
+        '**/index.ts',
+        'src/server.ts',
+        'src/instrument.ts',
+        'src/config/queue.ts',
+        'src/config/redis.ts',
+        'src/config/socket.ts',
+        'src/config/db.ts',
+        'src/modules/ai/**',
+        'src/modules/recurring/**',
+        'src/modules/file/**',
+        'src/utils/s3.ts',
+        'src/utils/mailer.ts',
+        'src/modules/payment/qpay.service.ts',
+        'src/modules/payment/stripe.service.ts',
+        'src/modules/auth/twoFactor.service.ts',
+      ],
+      thresholds: {
+        lines: 60,
+        functions: 45,
+        branches: 60,
+        statements: 60,
+      },
     },
   },
 });

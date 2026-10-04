@@ -7,6 +7,9 @@
     "packages/*"
   ],
   "scripts": {
+    "test:coverage": "turbo run test:coverage",
+    "test:coverage:backend": "npm run test:coverage --workspace=packages/backend",
+    "test:coverage:frontend": "npm run test:coverage --workspace=packages/frontend",
     "dev": "turbo run dev",
     "build": "turbo run build",
     "test": "turbo run test",

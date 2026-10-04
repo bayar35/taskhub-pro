@@ -22,3 +22,8 @@ coverage/
 /playwright/.cache/
 /blob-report/
 e2e/**/*.spec.ts-snapshots/
+
+# Coverage
+coverage/
+*.lcov
+.nyc_output/
