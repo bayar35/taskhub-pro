@@ -18,7 +18,7 @@ jobs:
       MONGO_URI: ${{ secrets.MONGO_URI_TEST }}
       JWT_SECRET: ${{ secrets.JWT_SECRET }}
       JWT_REFRESH_SECRET: ${{ secrets.JWT_REFRESH_SECRET }}
-       STRIPE_SECRET_KEY: ${{ sk_test_51Mock1234567890 }}
+      STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
       JWT_EXPIRES_IN: 15m
       JWT_REFRESH_EXPIRES_IN: 7d
       CLIENT_URL: http://localhost:5173
