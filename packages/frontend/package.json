@@ -4,6 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "prebuild": "cd ../.. && npm run build --workspace=packages/shared",
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "lint": "eslint .",
